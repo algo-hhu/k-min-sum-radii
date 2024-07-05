@@ -3,7 +3,7 @@
 #include <omp.h>
 
 #include <random>
-#include <set>
+#include <iostream>
 
 #include "header/gonzales.h"
 #include "header/welzl.h"
@@ -174,29 +174,15 @@ vector<Ball> selection(const vector<Point> &points, int k, const vector<int> &u,
   vector<Ball> balls(k);
   vector<vector<Point>> Si(k);
   double lambda = 1 + epsilon + 2 * sqrt(epsilon);
-  set<Point> X;
-  vector<Ball> R;
+
 
   for (int i = 0; i < u.size(); i++) {
     bool addedPoint = false;
 
-    // Leere die temporäre Liste von Bällen.
-    R.clear();
-
-    // Überprüfe, ob die Größe der Si gleich 1 ist und erstelle einen Ball für
-    // jeden solchen Fall.
-    for (int j = 0; j < Si.size(); j++) {
-      if (Si[j].size() == 1) {
-        Point center = Si[j][0];
-        double radius = (epsilon / (1 + epsilon)) * radii[j];
-        R.push_back(Ball(center, radius));
-      }
-    }
-
     // Füge den ersten ersten Punkt in 'points', der nicht von 'X' oder 'R'
     // enthalten ist zu 'S_ui' hinzu.
     for (Point p : points) {
-      if ((X.count(p) == 0) && !containsPoint(p, R)) {
+      if (!containsPoint(p, balls)) {
         Si[u[i]].push_back(p);
         addedPoint = true;
         break;
@@ -206,13 +192,6 @@ vector<Ball> selection(const vector<Point> &points, int k, const vector<int> &u,
     // Wenn kein Punkt hinzugefügt wurde, breche den Vorgang ab und gib die
     // Bälle zurück.
     if (!addedPoint) {
-      // Falls es Singletons gibt, erstelle einen Ball mit Radius 0 für jeden.
-      for (int i = 0; i < Si.size(); i++) {
-        if (Si[i].size() == 1) {
-          balls[i] = Ball(Si[i][0], (epsilon / (1 + epsilon)) * radii[i]);
-        }
-      }
-
       return balls;
     }
 
@@ -224,22 +203,10 @@ vector<Ball> selection(const vector<Point> &points, int k, const vector<int> &u,
       b.setRadius(b.getRadius() * lambda);
       balls[u[i]] = b;
 
-      // Füge die Punkte, die im neuen MEB von S_ui enthalten sind zu 'X' hinzu.
-      for (Point p : points) {
-        if (balls[u[i]].contains(p)) {
-          X.insert(p);
-        }
-      }
+    } else {
+      balls[u[i]] = Ball(Si[u[i]][0], (epsilon / (1 + epsilon)) * radii[u[i]]);
     }
   }
-
-  // Falls es Singletons gibt, erstelle einen Ball mit Radius 0 für jeden.
-  for (int i = 0; i < Si.size(); i++) {
-    if (Si[i].size() == 1) {
-      balls[i] = Ball(Si[i][0], (epsilon / (1 + epsilon)) * radii[i]);
-    }
-  }
-
   return balls;
 }
 
