@@ -3,7 +3,6 @@
 #include <omp.h>
 
 #include <random>
-#include <iostream>
 
 #include "header/gonzales.h"
 #include "header/welzl.h"
@@ -174,7 +173,6 @@ vector<Ball> selection(const vector<Point> &points, int k, const vector<int> &u,
   vector<Ball> balls(k);
   vector<vector<Point>> Si(k);
   double lambda = 1 + epsilon + 2 * sqrt(epsilon);
-
 
   for (int i = 0; i < u.size(); i++) {
     bool addedPoint = false;
