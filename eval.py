@@ -179,7 +179,7 @@ def cluster(point_files, config, ball_directory, cluster_directory, plot_directo
         cluster_path = os.path.join(
             cluster_directory, algorithm, f'cluster_{number}.csv')
         plot_path = os.path.join(
-            plot_directory, algorithm, f'plot_{number}.png')
+            plot_directory, algorithm, f'plot_{number}.pdf')
 
         # Lesen der Punkte aus der CSV-Datei und Umwandeln in ein C-Array
         c_array, numPoints = read_points_from_csv(point_path)
@@ -234,9 +234,9 @@ def cluster(point_files, config, ball_directory, cluster_directory, plot_directo
 
 def schmidt(point_files, config, ball_directory, cluster_directory, plot_directory, point_directory):
     # Werte für epsilon und u definieren
-    epsilon_values = [0.5, 0.4]
-    u_values = [1, 10, 100, 1000, 3000]
-    num_radii_values = [5]
+    epsilon_values = [0.5, 0.4, 0.3]
+    u_values = [1, 10, 100, 1000, 2000]
+    num_radii_values = [5, 10]
     # Anzahl der Cluster und Dimension der Punkte
     k = config['k']
     dimension = config['dimensions']
@@ -270,7 +270,7 @@ def schmidt(point_files, config, ball_directory, cluster_directory, plot_directo
                     cluster_path = os.path.join(cluster_directory, 'Schmidt', f'cluster_{number}_u{
                                                 u}_epsilon{epsilon}_num_radii{num_radii}.csv')
                     plot_path = os.path.join(plot_directory, 'Schmidt', f'plot_{number}_u{
-                                             u}_epsilon{epsilon}_num_radii{num_radii}.png')
+                                             u}_epsilon{epsilon}_num_radii{num_radii}.pdf')
 
                     # Lesen der Punkte aus der CSV-Datei und Umwandeln in ein C-Array
                     c_array, numPoints = read_points_from_csv(point_path)
@@ -344,7 +344,7 @@ def analyze_results_schmidt(config):
     plt.xticks(rotation=90)
     plt.tight_layout()
     plt.savefig(f'Data/{config['dimensions']
-                        }/Results/Schmidt/radii_boxplot_all.png')
+                        }/Results/Schmidt/radii_boxplot_all.pdf')
     plt.close()
 
     # Boxplots für konstantes u und variierendes epsilon
@@ -360,7 +360,7 @@ def analyze_results_schmidt(config):
         plt.xticks(rotation=90)
         plt.tight_layout()
         plt.savefig(
-            f'Data/{config['dimensions']}/Results/Schmidt/radii_boxplot_u{u_val}.png')
+            f'Data/{config['dimensions']}/Results/Schmidt/radii_boxplot_u{u_val}.pdf')
         plt.close()
 
     # Boxplots für konstantes epsilon und variierendes u
@@ -376,7 +376,7 @@ def analyze_results_schmidt(config):
         plt.xticks(rotation=90)
         plt.tight_layout()
         plt.savefig(
-            f'Data/{config['dimensions']}/Results/Schmidt/radii_boxplot_epsilon{epsilon_val}.png')
+            f'Data/{config['dimensions']}/Results/Schmidt/radii_boxplot_epsilon{epsilon_val}.pdf')
         plt.close()
 
     # Boxplot der Dauer der Durchläufe nach 'u'
@@ -389,7 +389,7 @@ def analyze_results_schmidt(config):
     plt.xticks(rotation=90)
     plt.tight_layout()
     plt.savefig(f'Data/{config["dimensions"]
-                        }/Results/Schmidt/duration_boxplot.png')
+                        }/Results/Schmidt/duration_boxplot.pdf')
     plt.close()
 
     # Berechnung der Verbesserung des Radius
@@ -445,7 +445,7 @@ def analyze_results_schmidt(config):
     plt.xticks(rotation=90)
     plt.tight_layout()
     plt.savefig(f'Data/{config["dimensions"]
-                        }/Results/Schmidt/num_radii_boxplot.png')
+                        }/Results/Schmidt/num_radii_boxplot.pdf')
     plt.close()
 
     # Markdown-Datei erstellen und Ergebnisse formatieren
