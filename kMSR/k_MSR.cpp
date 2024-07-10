@@ -139,10 +139,11 @@ vector<vector<double>> getRandomRadii(double rmax, int k, double epsilon,
 
 // Generiert eine Liste von Vektoren, die jeweils zufällige Ganzzahlen zwischen
 // 0 und k-1 enthalten.
-vector<vector<int>> getU(int n, int k, int numUVectors) {
+vector<vector<int>> getU(int n, int k, double epsilon, int numUVectors) {
   // Berechnet die Länge jedes Vektors basierend auf den gegebenen Parametern k
   // und epsilon.
-  int length = n;
+  int length =
+      min(n, static_cast<int>((32 * k * (1 + epsilon)) / (pow(epsilon, 3))));
 
   vector<vector<int>> result(numUVectors);
 
@@ -217,7 +218,7 @@ vector<Cluster> clustering(const vector<Point> &points, int k, double epsilon,
   // Berechnung der Radien und u-Werte basierend auf 'rmax', 'k' und 'epsilon'.
   vector<vector<double>> radii =
       getRandomRadii(rmax, k, epsilon, numRadiiVectors);
-  vector<vector<int>> u = getU(points.size(), k, numUVectors);
+  vector<vector<int>> u = getU(points.size(), k, epsilon, numUVectors);
 
   // Initialisiere das 'bestCluster', indem alle Punkte Teil eines Clusters
   // sind.

@@ -17,7 +17,8 @@ std::vector<std::vector<double>> getRadii(double rmax, int k, double epsilon);
 
 double logBase(double x, double b);
 
-std::vector<std::vector<int>> getU(int n, int k, int numUVectors);
+std::vector<std::vector<int>> getU(int n, int k, double epsilon,
+                                   int numUVectors);
 
 bool containsAllPoints(const std::vector<Point>& points,
                        const std::vector<Ball>& balls);
