@@ -159,10 +159,10 @@ def cluster(point_files, config, ball_directory, cluster_directory, plot_directo
     os.makedirs(os.path.join(cluster_directory, algorithm), exist_ok=True)
     os.makedirs(os.path.join(plot_directory, algorithm), exist_ok=True)
     os.makedirs(os.path.join(
-        f'Data/{dimension}/Results', algorithm), exist_ok=True)
+        f'Data/{dimension}/{k}/Results', algorithm), exist_ok=True)
 
     # Regex-Muster zum Extrahieren der Nummer aus dem Dateinamen
-    pattern = r"points_(\d+)\.csv"
+    pattern = r'points_(\d+)\.csv'
 
     results = []
 
@@ -226,30 +226,30 @@ def cluster(point_files, config, ball_directory, cluster_directory, plot_directo
     results.sort(key=lambda x: (x[0]))
 
     # Ergebnisse in eine CSV-Datei schreiben
-    with open(f'Data/{dimension}/Results/{algorithm}/results.csv', 'w') as f:
+    with open(f'Data/{dimension}/{k}/Results/{algorithm}/results.csv', 'w') as f:
         f.write('Datei,Dauer (Sekunden),Summe_der_Radien\n')
         for point_file, duration, radii in results:
-            f.write(f"{point_file},{duration},{radii}\n")
+            f.write(f'{point_file},{duration},{radii}\n')
 
 
 def schmidt(point_files, config, ball_directory, cluster_directory, plot_directory, point_directory):
     # Werte für epsilon und u definieren
-    epsilon_values = [0.5, 0.4, 0.3]
-    u_values = [1, 10, 100, 1000, 2000]
-    num_radii_values = [5, 10]
+    epsilon_values = [0.5]
+    u_values = [1, 10, 100, 1000]
+    num_radii_values = [5]
     # Anzahl der Cluster und Dimension der Punkte
     k = config['k']
     dimension = config['dimensions']
 
     # Verzeichnisse erstellen, falls sie nicht existieren
-    os.makedirs(os.path.join(ball_directory, "Schmidt"), exist_ok=True)
-    os.makedirs(os.path.join(cluster_directory, "Schmidt"), exist_ok=True)
-    os.makedirs(os.path.join(plot_directory, "Schmidt"), exist_ok=True)
+    os.makedirs(os.path.join(ball_directory, 'Schmidt'), exist_ok=True)
+    os.makedirs(os.path.join(cluster_directory, 'Schmidt'), exist_ok=True)
+    os.makedirs(os.path.join(plot_directory, 'Schmidt'), exist_ok=True)
     os.makedirs(os.path.join(
-        f'Data/{dimension}/Results', "Schmidt"), exist_ok=True)
+        f'Data/{dimension}/{k}/Results', 'Schmidt'), exist_ok=True)
 
     # Regex-Muster zum Extrahieren der Nummer aus dem Dateinamen
-    pattern = r"points_(\d+)\.csv"
+    pattern = r'points_(\d+)\.csv'
 
     results = []
     count = 1
@@ -322,157 +322,115 @@ def schmidt(point_files, config, ball_directory, cluster_directory, plot_directo
     results.sort(key=lambda x: (x[0], x[1], -x[2]))
 
     # Ergebnisse in eine CSV-Datei schreiben
-    with open(f'Data/{dimension}/Results/Schmidt/results.csv', 'w') as f:
+    with open(f'Data/{dimension}/{k}/Results/Schmidt/results.csv', 'w') as f:
         f.write('Datei,u,epsilon,num_radii,Dauer (Sekunden),Summe_der_Radien\n')
         for point_file, u, epsilon, num_radii, duration, radii in results:
-            f.write(f"{point_file},{u},{epsilon},{
-                    num_radii},{duration},{radii}\n")
+            f.write(f'{point_file},{u},{epsilon},{
+                    num_radii},{duration},{radii}\n')
 
 
 def analyze_results_schmidt(config):
-    # Ergebnisse in einen DataFrame umwandeln
-    df = pd.read_csv(
-        f'Data/{config['dimensions']}/Results/Schmidt/results.csv')
+    result_directory = f'Data/{config['dimensions']}/{config['k']}/Results/Schmidt'
 
-    # Boxplot der Radien nach 'u' und 'epsilon'
-    plt.figure(figsize=(10, 6))
-    df.boxplot(column='Summe_der_Radien', by=['u', 'epsilon'])
-    plt.title('Verteilung der Radien nach u und epsilon')
-    plt.suptitle('')
-    plt.xlabel('u, epsilon')
-    plt.ylabel('Summe_der_Radien')
-    plt.xticks(rotation=90)
-    plt.tight_layout()
-    plt.savefig(f'Data/{config['dimensions']
-                        }/Results/Schmidt/radii_boxplot_all.pdf')
-    plt.close()
+    # Ergebnisse in einen DataFrame umwandeln
+    df = pd.read_csv(f'{result_directory}/results.csv')
+    
+    # Beste Kombination von u, epsilon und num_radii basierend auf dem kleinsten Durchschnitt der Radien
+    best_u, best_num_radii, best_epsilon = df.groupby(['u', 'num_radii', 'epsilon'])['Summe_der_Radien'].mean().idxmin()
+
+    analyse_u(df, best_u, best_num_radii, best_epsilon, result_directory)
 
     # Boxplots für konstantes u und variierendes epsilon
-    for u_val in df['u'].unique():
-        df_u = df[df['u'] == u_val]
-        plt.figure(figsize=(10, 6))
-        df_u.boxplot(column='Summe_der_Radien', by='epsilon')
-        plt.title(f'Verteilung der Radien für u={
-                  u_val} und variierendes epsilon')
-        plt.suptitle('')
-        plt.xlabel('epsilon')
-        plt.ylabel('Summe_der_Radien')
-        plt.xticks(rotation=90)
-        plt.tight_layout()
-        plt.savefig(
-            f'Data/{config['dimensions']}/Results/Schmidt/radii_boxplot_u{u_val}.pdf')
-        plt.close()
+    # for u_val in df['u'].unique():
+    #     df_u = df[df['u'] == u_val]
+    #     plt.figure(figsize=(10, 6))
+    #     df_u.boxplot(column='Summe_der_Radien', by='epsilon')
+    #     plt.title(f'Verteilung der Radien für u={u_val} und variierendes epsilon')
+    #     plt.suptitle('')
+    #     plt.xlabel('epsilon')
+    #     plt.ylabel('Summe_der_Radien')
+    #     plt.xticks(rotation=90)
+    #     plt.tight_layout()
+    #     plt.savefig(f'{result_directory}/radii_boxplot_u{u_val}.pdf')
+    #     plt.close()
 
     # Boxplots für konstantes epsilon und variierendes u
-    for epsilon_val in df['epsilon'].unique():
-        df_epsilon = df[df['epsilon'] == epsilon_val]
-        plt.figure(figsize=(10, 6))
-        df_epsilon.boxplot(column='Summe_der_Radien', by='u')
-        plt.title(f'Verteilung der Radien für epsilon={
-                  epsilon_val} und variierendes u')
-        plt.suptitle('')
-        plt.xlabel('u')
-        plt.ylabel('Summe_der_Radien')
-        plt.xticks(rotation=90)
-        plt.tight_layout()
-        plt.savefig(
-            f'Data/{config['dimensions']}/Results/Schmidt/radii_boxplot_epsilon{epsilon_val}.pdf')
-        plt.close()
-
-    # Boxplot der Dauer der Durchläufe nach 'u'
-    plt.figure(figsize=(10, 6))
-    df.boxplot(column='Dauer (Sekunden)', by='u')
-    plt.title('Verteilung der Dauer nach u')
-    plt.suptitle('')
-    plt.xlabel('u')
-    plt.ylabel('Dauer (Sekunden)')
-    plt.xticks(rotation=90)
-    plt.tight_layout()
-    plt.savefig(f'Data/{config["dimensions"]
-                        }/Results/Schmidt/duration_boxplot.pdf')
-    plt.close()
+    # for epsilon_val in df['epsilon'].unique():
+    #     df_epsilon = df[df['epsilon'] == epsilon_val]
+    #     plt.figure(figsize=(10, 6))
+    #     df_epsilon.boxplot(column='Summe_der_Radien', by='u')
+    #     plt.title(f'Verteilung der Radien für epsilon={epsilon_val} und variierendes u')
+    #     plt.suptitle('')
+    #     plt.xlabel('u')
+    #     plt.ylabel('Summe_der_Radien')
+    #     plt.xticks(rotation=90)
+    #     plt.tight_layout()
+    #     plt.savefig(f'{result_directory}/radii_boxplot_epsilon{epsilon_val}.pdf')
+    #     plt.close()
 
     # Berechnung der Verbesserung des Radius
-    min_u = min(df['u'])
-    max_epsilon = max(df['epsilon'])
-    min_num_radii = min(df['num_radii'])
-    df_min = df[(df['u'] == min_u) & (df['epsilon'] == max_epsilon)
-                & (df['num_radii'] == min_num_radii)]
+    # min_u = min(df['u'])
+    # max_epsilon = max(df['epsilon'])
+    # min_num_radii = min(df['num_radii'])
+    # df_min = df[(df['u'] == min_u) & (df['epsilon'] == max_epsilon) & (df['num_radii'] == min_num_radii)]
 
-    improvements = []
-    for u in df['u'].unique():
-        for r in df['num_radii'].unique():
-            for epsilon in df['epsilon'].unique():
-                if u != min_u or epsilon != max_epsilon or r != min_num_radii:
-                    df_u_num_radii_epsilon = df[(df['u'] == u) & (
-                        df['num_radii'] == r) & (df['epsilon'] == epsilon)]
-                    merged = pd.merge(df_min, df_u_num_radii_epsilon, on='Datei', suffixes=(
-                        '_min', f'_u{u}_num_radii{r}_epsilon{epsilon}'))
-                    merged['improvement'] = (merged['Summe_der_Radien_min'] - merged[f'Summe_der_Radien_u{
-                                             u}_num_radii{r}_epsilon{epsilon}']) / merged['Summe_der_Radien_min'] * 100
-                    improvements.append(
-                        (u, r, epsilon, merged['improvement'].mean()))
+    # improvements = []
+    # for u in df['u'].unique():
+    #     for r in df['num_radii'].unique():
+    #         for epsilon in df['epsilon'].unique():
+    #             if u != min_u or epsilon != max_epsilon or r != min_num_radii:
+    #                 df_u_num_radii_epsilon = df[(df['u'] == u) & (df['num_radii'] == r) & (df['epsilon'] == epsilon)]
+    #                 merged = pd.merge(df_min, df_u_num_radii_epsilon, on='Datei', suffixes=('_min', f'_u{u}_num_radii{r}_epsilon{epsilon}'))
+    #                 merged['improvement'] = (merged['Summe_der_Radien_min'] - merged[f'Summe_der_Radien_u{u}_num_radii{r}_epsilon{epsilon}']) / merged['Summe_der_Radien_min'] * 100
+    #                 improvements.append((u, r, epsilon, merged['improvement'].mean()))
 
-    improvement_df = pd.DataFrame(
-        improvements, columns=['u', 'num_radii', 'epsilon', 'Improvement (%)'])
+    # improvement_df = pd.DataFrame(improvements, columns=['u', 'num_radii', 'epsilon', 'Improvement (%)'])
 
-    # Verbesserungen anzeigen
-    print(f"Verbesserung des Radius im Vergleich zu u={
-          min_u}, num_radii={min_num_radii} und epsilon={max_epsilon}:")
-    print(improvement_df)
+    # # Verbesserungen anzeigen
+    # print(f'Verbesserung des Radius im Vergleich zu u={min_u}, num_radii={min_num_radii} und epsilon={max_epsilon}:')
+    # print(improvement_df)
 
-    # Verbesserungen in eine CSV-Datei schreiben
-    improvement_df.to_csv(
-        f'Data/{config['dimensions']}/Results/Schmidt/radius_improvement.csv', index=False)
+    # # Verbesserungen in eine CSV-Datei schreiben
+    # improvement_df.to_csv(f'Data/{config['dimensions']}/{config['k']}/Results/Schmidt/radius_improvement.csv', index=False)
 
-    # Beste Kombination von u und epsilon basierend auf dem kleinsten Durchschnitt der Radien
-    best_u, best_num_radii, best_epsilon = df.groupby(['u', 'num_radii', 'epsilon'])[
-        'Summe_der_Radien'].mean().idxmin()
-    best_mean_radius = df[(df['u'] == best_u) & (df['num_radii'] == best_num_radii) & (
-        df['epsilon'] == best_epsilon)]['Summe_der_Radien'].mean()
-    print(f"Die beste Kombination ist u={best_u}, num_radii={best_num_radii} und epsilon={
-          best_epsilon} mit dem kleinsten durchschnittlichen Radius={best_mean_radius:.6f}.")
+    best_mean_radius = df[(df['u'] == best_u) & (df['num_radii'] == best_num_radii) & (df['epsilon'] == best_epsilon)]['Summe_der_Radien'].mean()
+    print(f'Die beste Kombination ist u={best_u}, num_radii={best_num_radii} und epsilon={best_epsilon} mit dem kleinsten durchschnittlichen Radius={best_mean_radius:.6f}.')
 
     # Boxplot der Radien nach num_radiis für best_u und best_epsilon
     plt.figure(figsize=(10, 6))
     df_best = df[(df['u'] == best_u) & (df['epsilon'] == best_epsilon)]
     df_best.boxplot(column='Summe_der_Radien', by='num_radii')
-    plt.title(f'Verteilung der Radien nach Anzahl der Radien (bestes u={
-              best_u}, bestes epsilon={best_epsilon})')
+    plt.title(f'Verteilung der Radien nach Anzahl der Radien (bestes u={best_u}, bestes epsilon={best_epsilon})')
     plt.suptitle('')
     plt.xlabel('num_radii')
     plt.ylabel('Summe_der_Radien')
     plt.xticks(rotation=90)
     plt.tight_layout()
-    plt.savefig(f'Data/{config["dimensions"]
-                        }/Results/Schmidt/num_radii_boxplot.pdf')
+    plt.savefig(f'{result_directory}/num_radii_boxplot.pdf')
     plt.close()
 
     # Markdown-Datei erstellen und Ergebnisse formatieren
-    with open(f"Data/{config['dimensions']}/Results/Schmidt/radius_improvement.md", 'w') as md_file:
-        md_file.write("# Verbesserung des Radius\n")
-        md_file.write(f"Vergleich der Verbesserungen des Radius im Vergleich zu u={
-                      min_u}, num_radii={min_num_radii} und epsilon={max_epsilon}:\n\n")
-        md_file.write("| u | num_radii | epsilon | Improvement (%) |\n")
-        md_file.write("|---|---------------|---------|-----------------|\n")
-        for row in improvements:
-            md_file.write(f"| {row[0]} | {row[1]} | {
-                          row[2]} | {row[3]:.2f} |\n")
-        md_file.write("\n")
-        md_file.write(f"Die beste Kombination ist u={best_u}, num_radii={best_num_radii} und epsilon={
-                      best_epsilon} mit dem kleinsten durchschnittlichen Radius={best_mean_radius:.6f}.\n")
+    # with open(f'{result_directory}/radius_improvement.md', 'w') as md_file:
+    #     md_file.write('# Verbesserung des Radius\n')
+    #     md_file.write(f'Vergleich der Verbesserungen des Radius im Vergleich zu u={min_u}, num_radii={min_num_radii} und epsilon={max_epsilon}:\n\n')
+    #     md_file.write('| u | num_radii | epsilon | Improvement (%) |\n')
+    #     md_file.write('|---|---------------|---------|-----------------|\n')
+    #     for row in improvements:
+    #         md_file.write(f'| {row[0]} | {row[1]} | {row[2]} | {row[3]:.2f} |\n')
+    #     md_file.write('\n')
+    #     md_file.write(f'Die beste Kombination ist u={best_u}, num_radii={best_num_radii} und epsilon={best_epsilon} mit dem kleinsten durchschnittlichen Radius={best_mean_radius:.6f}.\n')
 
 
 def compare_algorithms(config):
     # Lade die Ergebnisse
     schmidt_results = pd.read_csv(
-        f'Data/{config["dimensions"]}/Results/Schmidt/results.csv')
+        f'Data/{config['dimensions']}/{config['k']}/Results/Schmidt/results.csv')
     gonzales_results = pd.read_csv(
-        f'Data/{config["dimensions"]}/Results/Gonzales/results.csv')
+        f'Data/{config['dimensions']}/{config['k']}/Results/Gonzales/results.csv')
     kmeans_results = pd.read_csv(
-        f'Data/{config["dimensions"]}/Results/KMeansPlusPlus/results.csv')
+        f'Data/{config['dimensions']}/{config['k']}/Results/KMeansPlusPlus/results.csv')
     heuristik_results = pd.read_csv(
-        f'Data/{config["dimensions"]}/Results/Heuristik/results.csv')
+        f'Data/{config['dimensions']}/{config['k']}/Results/Heuristik/results.csv')
 
     # Beste Kombination von u, num_radii und epsilon basierend auf dem kleinsten Durchschnitt der Radien
     best_u, best_num_radii, best_epsilon = schmidt_results.groupby(
@@ -486,12 +444,12 @@ def compare_algorithms(config):
     heuristik_avg_radius = heuristik_results['Summe_der_Radien'].mean()
 
     # Anzeigen der Durchschnittswerte
-    print(f"Durchschnittlicher Radius für Schmidt: {
-          best_schmidt_avg_radius:.6f}")
-    print(f"Durchschnittlicher Radius für Gonzales: {gonzales_avg_radius:.6f}")
-    print(f"Durchschnittlicher Radius für KMeans++: {kmeans_avg_radius:.6f}")
-    print(f"Durchschnittlicher Radius für Heuristik: {
-          heuristik_avg_radius:.6f}")
+    print(f'Durchschnittlicher Radius für Schmidt: {
+          best_schmidt_avg_radius:.6f}')
+    print(f'Durchschnittlicher Radius für Gonzales: {gonzales_avg_radius:.6f}')
+    print(f'Durchschnittlicher Radius für KMeans++: {kmeans_avg_radius:.6f}')
+    print(f'Durchschnittlicher Radius für Heuristik: {
+          heuristik_avg_radius:.6f}')
 
     all_comparison_results = []
     worse_schmidt_points = []
@@ -615,38 +573,149 @@ def compare_algorithms(config):
 
     # Ergebnisse als Tabelle speichern
     comparison_df.to_csv(
-        f'Data/{config["dimensions"]}/Results/comparison_all_us_epsilons.csv', index=False)
+        f'Data/{config['dimensions']}/{config['k']}/Results/comparison_all_us_epsilons.csv', index=False)
 
     # Markdown-Datei erstellen
-    with open(f'Data/{config["dimensions"]}/Results/comparison_all_us_epsilons.md', 'w') as md_file:
+    with open(f'Data/{config['dimensions']}/{config['k']}/Results/comparison_all_us_epsilons.md', 'w') as md_file:
         md_file.write(
-            "# Paarweiser Vergleich der Clustering-Algorithmen für alle u- und epsilon-Werte\n\n")
-        md_file.write("| u  | epsilon | num_radii | Schmidt vs Alle Besser (%) | Schmidt vs Alle Schlechter (%) | Schmidt vs Gonzales Besser (%) | Schmidt vs Gonzales Schlechter (%) | Schmidt vs KMeans++ Besser (%) | Schmidt vs KMeans++ Schlechter (%) | Schmidt vs Heuristik Besser (%) | Schmidt vs Heuristik Schlechter (%) |\n")
-        md_file.write("|----|---------|---------------|----------------------------|--------------------------------|--------------------------------|------------------------------------|--------------------------------|------------------------------------|---------------------------------|-------------------------------------|\n")
+            '# Paarweiser Vergleich der Clustering-Algorithmen für alle u- und epsilon-Werte\n\n')
+        md_file.write('| u  | epsilon | num_radii | Schmidt vs Alle Besser (%) | Schmidt vs Alle Schlechter (%) | Schmidt vs Gonzales Besser (%) | Schmidt vs Gonzales Schlechter (%) | Schmidt vs KMeans++ Besser (%) | Schmidt vs KMeans++ Schlechter (%) | Schmidt vs Heuristik Besser (%) | Schmidt vs Heuristik Schlechter (%) |\n')
+        md_file.write('|----|---------|---------------|----------------------------|--------------------------------|--------------------------------|------------------------------------|--------------------------------|------------------------------------|---------------------------------|-------------------------------------|\n')
         for _, row in comparison_df.iterrows():
-            md_file.write(f"| {int(row['u'])} | {row['epsilon']} | {int(row['num_radii'])} |{row['Schmidt vs Alle Besser (%)']:.2f} | {row['Schmidt vs Alle Schlechter (%)']:.2f} | {row['Schmidt vs Gonzales Besser (%)']:.2f} | {row['Schmidt vs Gonzales Schlechter (%)']:.2f} | {
-                          row['Schmidt vs KMeans++ Besser (%)']:.2f} | {row['Schmidt vs KMeans++ Schlechter (%)']:.2f} | {row['Schmidt vs Heuristik Besser (%)']:.2f} | {row['Schmidt vs Heuristik Schlechter (%)']:.2f} |\n")
+            md_file.write(f'| {int(row['u'])} | {row['epsilon']} | {int(row['num_radii'])} |{row['Schmidt vs Alle Besser (%)']:.2f} | {row['Schmidt vs Alle Schlechter (%)']:.2f} | {row['Schmidt vs Gonzales Besser (%)']:.2f} | {row['Schmidt vs Gonzales Schlechter (%)']:.2f} | {
+                          row['Schmidt vs KMeans++ Besser (%)']:.2f} | {row['Schmidt vs KMeans++ Schlechter (%)']:.2f} | {row['Schmidt vs Heuristik Besser (%)']:.2f} | {row['Schmidt vs Heuristik Schlechter (%)']:.2f} |\n')
 
     # Speichern der Dateien, bei denen Schmidt schlechter als alle anderen ist
-    with open(f'Data/{config["dimensions"]}/Results/Schmidt/worse_schmidt_points.md', 'w') as md_file:
-        md_file.write(f"u: {best_u}, num_radii: {
-                      best_num_radii}, epsilon: {best_epsilon}\n")
-        md_file.write("Dateien:\n")
+    with open(f'Data/{config['dimensions']}/{config['k']}/Results/Schmidt/worse_schmidt_points.md', 'w') as md_file:
+        md_file.write(f'u: {best_u}, num_radii: {
+                      best_num_radii}, epsilon: {best_epsilon}\n')
+        md_file.write('Dateien:\n')
         for datei in worse_schmidt_points:
-            md_file.write(f"{datei}\n")
-        md_file.write("\n")
+            md_file.write(f'{datei}\n')
+        md_file.write('\n')
+
+
+def analyse_u(df, best_u, best_num_radii, best_epsilon, output_directory):
+    best_df = df[(df['num_radii'] == best_num_radii) & (df['epsilon'] == best_epsilon)]
+
+    duration_stats = best_df.groupby('u').agg(
+        mean_duration=('Dauer (Sekunden)', 'mean'),
+        median_duration=('Dauer (Sekunden)', 'median'),
+        std_duration=('Dauer (Sekunden)', 'std'),
+        min_duration=('Dauer (Sekunden)', 'min'),
+        max_duration=('Dauer (Sekunden)', 'max')
+    ).reset_index()
+
+    sum_of_radii_stats = best_df.groupby('u').agg(
+        mean_sum=('Summe_der_Radien', 'mean'),
+        median_sum=('Summe_der_Radien', 'median'),
+        std_sum=('Summe_der_Radien', 'std'),
+        min_sum=('Summe_der_Radien', 'min'),
+        max_sum=('Summe_der_Radien', 'max')
+    ).reset_index()
+
+    # Boxplot der Dauer der Durchläufe nach 'u'
+    plt.figure(figsize=(10, 6))
+    best_df.boxplot(column='Dauer (Sekunden)', by='u')
+    plt.title('Verteilung der Dauer nach u')
+    plt.suptitle('')
+    plt.xlabel('u')
+    plt.ylabel('Dauer (Sekunden)')
+    plt.xticks(rotation=90)
+    plt.tight_layout()
+    plt.savefig(f'{output_directory}/u_duration_boxplot.pdf')
+    plt.close()
+
+    # Boxplot der Summe der Radien nach 'u'
+    plt.figure(figsize=(10, 6))
+    best_df.boxplot(column='Summe_der_Radien', by='u')
+    plt.title('Verteilung der Summe der Radien nach u')
+    plt.suptitle('')
+    plt.xlabel('u')
+    plt.ylabel('Summe der Radien')
+    plt.xticks(rotation=90)
+    plt.tight_layout()
+    plt.savefig(f'{output_directory}/u_summe_der_radien_boxplot.pdf')
+    plt.close()
+
+    min_u = min(df['u'])
+    min_df = best_df[best_df['u'] == min_u]
+    improvements = []
+    for u in best_df['u'].unique():
+        if u != min_u :
+            df_u= best_df[(best_df['u'] == u)]
+            merged = pd.merge(min_df, df_u, on='Datei', suffixes=('_min', f'_u{u}'))
+            merged['improvement'] = (merged['Summe_der_Radien_min'] - merged[f'Summe_der_Radien_u{u}']) / merged['Summe_der_Radien_min'] * 100
+            improvements.append((u, merged['improvement'].mean()))
+    
+    improvement_df = pd.DataFrame(improvements, columns=['u', 'Improvement (%)'])
+
+    # Verbesserungen anzeigen
+    print(f'Verbesserung des Radius im Vergleich zu u={min_u}:')
+    print(improvement_df)
+
+    # Markdown-Datei erstellen und Ergebnisse formatieren
+    with open(f'{output_directory}/radius_improvement.md', 'w') as md_file:
+        md_file.write('# Verbesserung des Radius\n')
+        md_file.write(f'Vergleich der Verbesserungen des Radius im Vergleich zu u={min_u}:\n\n')
+        md_file.write('| u | Improvement (%) |\n')
+        md_file.write('|---|-----------------|\n')
+        for row in improvements:
+            md_file.write(f'| {row[0]} | {row[1]:.2f} |\n')
+        md_file.write('\n')
+
+
+
+    tex_file = f'{output_directory}/u.tex'
+
+    with open(tex_file, 'w') as f:
+        f.write('\\begin{table}[H]\n')
+        f.write('\\centering\n')
+        f.write('\\begin{tabularx}{\\textwidth}{|X|X|X|X|X|X|}\n')
+        f.write('\\hline\n')
+        f.write(
+            '\\textit{u} & Mittelwert (Sek.) & Median (Sek.) & Standard-abweichung & Minimum (Sek.) & Maximum (Sek.) \\\\ \\hline\n')
+
+        for _, row in duration_stats.iterrows():
+            f.write(f'{int(row['u'])} & {row['mean_duration']:.4f} & {row['median_duration']:.4f} & {
+                    row['std_duration']:.4f} & {row['min_duration']:.4f} & {row['max_duration']:.4f} \\\\ \\hline\n')
+
+        f.write('\\end{tabularx}\n')
+        f.write(
+            '\\caption{Statistische Zusammenfassung der Laufzeit für verschiedene Werte von \\textit{u}.}\n')
+        f.write('\\label{tab:stats_u}\n')
+        f.write('\\end{table}\n')
+        f.write('\n')
+
+        f.write('\\begin{table}[H]\n')
+        f.write('\\centering\n')
+        f.write('\\begin{tabularx}{\\textwidth}{|X|X|X|X|X|X|}\n')
+        f.write('\\hline\n')
+        f.write(
+            '\\textit{u} & Mittelwert & Median & Standard-abweichung & Minimum & Maximum \\\\ \\hline\n')
+
+        for _, row in sum_of_radii_stats.iterrows():
+            f.write(f'{int(row['u'])} & {row['mean_sum']:.4f} & {row['median_sum']:.4f} & {
+                    row['std_sum']:.4f} & {row['min_sum']:.4f} & {row['max_sum']:.4f} \\\\ \\hline\n')
+
+        f.write('\\end{tabularx}\n')
+        f.write(
+            '\\caption{Statistische Zusammenfassung der Summe der Radien für verschiedene Werte von \\textit{u}.}\n')
+        f.write('\\label{tab:summe_der_radien_u}\n')
+        f.write('\\end{table}\n')
+
 
 
 def main(config):
     # Verzeichnisse definieren
-    directory = f'Data/{config["dimensions"]}'
+    directory = f'Data/{config['dimensions']}/{config['k']}'
     point_directory = os.path.join(directory, 'Points')
     ball_directory = os.path.join(directory, 'Balls')
     cluster_directory = os.path.join(directory, 'Cluster')
     plot_directory = os.path.join(directory, 'Plots')
 
     # Überprüfen, ob die Punkte-Dateien existieren, andernfalls generieren
-    if not os.path.exists(os.path.join(point_directory, f'points_{config["number_files"] - 1}.csv')):
+    if not os.path.exists(os.path.join(point_directory, f'points_{config['number_files'] - 1}.csv')):
         generator.generate_data(config)
 
     # Liste der Punkte-Dateien im Verzeichnis
@@ -664,7 +733,7 @@ def main(config):
             plot_directory, point_directory, 'KMeansPlusPlus', lib.kmeans_wrapper)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     # Argumente aus der Konfiguration holen
     config = generator.handle_arguments()
 
