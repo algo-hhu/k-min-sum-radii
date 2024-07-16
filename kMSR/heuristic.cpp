@@ -1,5 +1,6 @@
 #include <omp.h>
 
+#include <iostream>
 #include <random>
 
 #include "header/ball.h"
@@ -40,8 +41,12 @@ vector<Cluster> assignPointsToCluster(const vector<Point> &points,
 // Überprüft, ob zwei Cluster sich überlappen oder berühren
 bool clustersOverlap(const Cluster &c1, const Cluster &c2) {
   // Berechne die MEBs
-  Ball b1 = findMinEnclosingBall(c1.getPoints());
-  Ball b2 = findMinEnclosingBall(c2.getPoints());
+  vector<Point> p1 = c1.getPoints();
+  vector<Point> p2 = c2.getPoints();
+
+  if (p1.size() == 0 || p2.size() == 0) return false;
+  Ball b1 = findMinEnclosingBall(p1);
+  Ball b2 = findMinEnclosingBall(p2);
 
   // Berechne die euklidische Distanz zwischen den Zentren der beiden Bälle
   double distance = Point::distance(b1.getCenter(), b2.getCenter());

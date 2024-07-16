@@ -5,13 +5,15 @@
 
 #include <stdexcept>
 #include <vector>
+#include <cmath>
 
 class Point {
  public:
-  Point();
   Point(std::vector<double> coords);
+  Point(int dimension);
 
   double distanceTo(const Point& other) const;
+  double squaredDistanceToOrigin() const;
   static double distance(const Point& p1, const Point& p2);
   const std::vector<double>& getCoordinates() const { return coordinates; }
   void setCoordinates(std::vector<double> newCoordinates) {

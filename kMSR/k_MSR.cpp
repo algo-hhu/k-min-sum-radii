@@ -171,7 +171,7 @@ vector<vector<int>> getU(int n, int k, double epsilon, int numUVectors) {
 // Erstellt 'k' Bälle, die alle übergebenen Punkte beinhalten.
 vector<Ball> selection(const vector<Point> &points, int k, const vector<int> &u,
                        const vector<double> &radii, double epsilon) {
-  vector<Ball> balls(k);
+  vector<Ball> balls(k, Ball(points.front().getCoordinates().size()));
   vector<vector<Point>> Si(k);
   double lambda = 1 + epsilon + 2 * sqrt(epsilon);
 

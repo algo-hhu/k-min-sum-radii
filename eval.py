@@ -77,19 +77,6 @@ def calculate_miniball(points):
     return mb.center(), radius
 
 
-# Funktion zum Speichern der Cluster in einer CSV-Datei
-def save_clusters_to_csv(clusters, output_file):
-    data_to_save = []
-    for cluster_idx, cluster in enumerate(clusters):
-        for point in cluster:
-            data_to_save.append(list(point) + [cluster_idx])
-
-    with open(output_file, mode='w') as file:
-        writer = csv.writer(file)
-        writer.writerow(['x', 'y', 'cluster'])
-        writer.writerows(data_to_save)
-
-
 # Funktion zum Extrahieren der Cluster aus der C-Struktur
 def extract_clusters(cluster_ptr, num_clusters_value):
     clusters = cluster_ptr[:num_clusters_value]
@@ -107,6 +94,17 @@ def extract_clusters(cluster_ptr, num_clusters_value):
     return np.array(cluster_points_list, dtype=object)
 
 
+# Funktion zum Speichern der Cluster in einer CSV-Datei
+def save_clusters_to_csv(clusters, output_file):
+    data_to_save = []
+    for cluster_idx, cluster in enumerate(clusters):
+        for point in cluster:
+            data_to_save.append(list(point) + [cluster_idx])
+
+    with open(output_file, mode='w') as file:
+        writer = csv.writer(file)
+        writer.writerows(data_to_save)
+
 # Funktion zum Berechnen und Speichern der MEBs in einer CSV-Datei
 def save_mebs_to_csv(clusters, output_file):
     meb_data_to_save = []
@@ -114,12 +112,11 @@ def save_mebs_to_csv(clusters, output_file):
     for _, cluster in enumerate(clusters):
         if len(cluster) > 0:
             center, radius = calculate_miniball(np.array(cluster))
+            meb_data_to_save.append(list(center) + [radius])
             sum_of_radii += radius
-            meb_data_to_save.append([center[0], center[1], radius])
 
     with open(output_file, mode='w') as file:
         writer = csv.writer(file)
-        writer.writerow(['center_x', 'center_y', 'radius'])
         writer.writerows(meb_data_to_save)
 
     return sum_of_radii
@@ -127,7 +124,7 @@ def save_mebs_to_csv(clusters, output_file):
 
 # Funktion zum Lesen von Punkten aus einer CSV-Datei und Umwandlung in ein C-Array
 def read_points_from_csv(input_file):
-    points_array = np.loadtxt(input_file, delimiter=',', usecols=[1, 2])
+    points_array = np.loadtxt(input_file, delimiter=',')
     points_array = np.ascontiguousarray(points_array)
 
     c_array = points_array.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
@@ -149,17 +146,12 @@ def call_clustering_function(clustering_func, c_array, numPoints, dimensions, k,
 
 
 # Funktion zur Durchführung des Clusterings mit verschiedenen Algorithmen
-def cluster(point_files, config, ball_directory, cluster_directory, plot_directory, point_directory, algorithm, c_function):
-    # Anzahl der Cluster
-    k = config['k']
-    dimension = config['dimensions']
-
+def cluster(point_files, dimension, k, ball_directory, cluster_directory, plot_directory, point_directory, algorithm, c_function):
     # Verzeichnisse erstellen, falls sie nicht existieren
     os.makedirs(os.path.join(ball_directory, algorithm), exist_ok=True)
     os.makedirs(os.path.join(cluster_directory, algorithm), exist_ok=True)
     os.makedirs(os.path.join(plot_directory, algorithm), exist_ok=True)
-    os.makedirs(os.path.join(
-        f'Data/{dimension}/{k}/Results', algorithm), exist_ok=True)
+    os.makedirs(os.path.join(f'Data/{dimension}/{k}/Results', algorithm), exist_ok=True)
 
     # Regex-Muster zum Extrahieren der Nummer aus dem Dateinamen
     pattern = r'points_(\d+)\.csv'
@@ -218,9 +210,11 @@ def cluster(point_files, config, ball_directory, cluster_directory, plot_directo
         # Ergebnisse speichern
         results.append((point_file, duration,  radii))
 
-        # Cluster plotten, wenn Dimension = 2
+        # Cluster plotten, wenn Dimension = 2 oder 3
         if dimension == 2:
             plot.plot_cluster(cluster_path, ball_path, plot_path)
+        if dimension == 3:
+            plot.plot_3d_cluster(cluster_path, ball_path, plot_path)
 
     # Ergebnisse sortieren nach Dateiname
     results.sort(key=lambda x: (x[0]))
@@ -232,14 +226,11 @@ def cluster(point_files, config, ball_directory, cluster_directory, plot_directo
             f.write(f'{point_file},{duration},{radii}\n')
 
 
-def schmidt(point_files, config, ball_directory, cluster_directory, plot_directory, point_directory):
+def schmidt(point_files, dimension, k, ball_directory, cluster_directory, plot_directory, point_directory):
     # Werte für epsilon und u definieren
     epsilon_values = [0.5]
-    u_values = [1, 10, 100, 1000]
+    u_values = [1, 10, 100, 1000, 10000]
     num_radii_values = [5]
-    # Anzahl der Cluster und Dimension der Punkte
-    k = config['k']
-    dimension = config['dimensions']
 
     # Verzeichnisse erstellen, falls sie nicht existieren
     os.makedirs(os.path.join(ball_directory, 'Schmidt'), exist_ok=True)
@@ -313,7 +304,10 @@ def schmidt(point_files, config, ball_directory, cluster_directory, plot_directo
                         (point_file, u, epsilon, num_radii, duration, radii))
 
                     # Cluster plotten und speichern
-                    plot.plot_cluster(cluster_path, ball_path, plot_path)
+                    if dimension == 2:
+                        plot.plot_cluster(cluster_path, ball_path, plot_path)
+                    if dimension == 3:
+                        plot.plot_3d_cluster(cluster_path, ball_path, plot_path)
 
         print(count)
         count += 1
@@ -707,30 +701,30 @@ def analyse_u(df, best_u, best_num_radii, best_epsilon, output_directory):
 
 
 def main(config):
-    # Verzeichnisse definieren
-    directory = f'Data/{config['dimensions']}/{config['k']}'
-    point_directory = os.path.join(directory, 'Points')
-    ball_directory = os.path.join(directory, 'Balls')
-    cluster_directory = os.path.join(directory, 'Cluster')
-    plot_directory = os.path.join(directory, 'Plots')
+    dimensions = [2, 3, 4, 5]
+    ks = [2, 3, 4, 5]
 
-    # Überprüfen, ob die Punkte-Dateien existieren, andernfalls generieren
-    if not os.path.exists(os.path.join(point_directory, f'points_{config['number_files'] - 1}.csv')):
-        generator.generate_data(config)
+    for dimension in dimensions:
+        for k in ks:
+            # Verzeichnisse definieren
+            directory = f'Data/{dimension}/{k}'
+            point_directory = os.path.join(directory, 'Points')
+            ball_directory = os.path.join(directory, 'Balls')
+            cluster_directory = os.path.join(directory, 'Cluster')
+            plot_directory = os.path.join(directory, 'Plots')
 
-    # Liste der Punkte-Dateien im Verzeichnis
-    point_files = [f for f in os.listdir(
-        point_directory) if f.endswith('.csv')]
+            # Überprüfen, ob die Punkte-Dateien existieren, andernfalls generieren
+            if not os.path.exists(os.path.join(point_directory, f'points_{config['number_files'] - 1}.csv')):
+                generator.generate_data(config, dimension, k)
 
-    # Ausführung der Algorithmen
-    schmidt(point_files, config, ball_directory,
-            cluster_directory, plot_directory, point_directory)
-    cluster(point_files, config, ball_directory, cluster_directory,
-            plot_directory, point_directory, 'Heuristik', lib.heuristic_wrapper)
-    cluster(point_files, config, ball_directory, cluster_directory,
-            plot_directory, point_directory, 'Gonzales', lib.gonzales_wrapper)
-    cluster(point_files, config, ball_directory, cluster_directory,
-            plot_directory, point_directory, 'KMeansPlusPlus', lib.kmeans_wrapper)
+            # Liste der Punkte-Dateien im Verzeichnis
+            point_files = [f for f in os.listdir(point_directory) if f.endswith('.csv')]
+
+            # Ausführung der Algorithmen
+            schmidt(point_files, dimension, k, ball_directory, cluster_directory, plot_directory, point_directory)
+            cluster(point_files, dimension, k, ball_directory, cluster_directory, plot_directory, point_directory, 'Gonzales', lib.gonzales_wrapper)
+            cluster(point_files, dimension, k, ball_directory, cluster_directory, plot_directory, point_directory, 'KMeansPlusPlus', lib.kmeans_wrapper)
+            cluster(point_files, dimension, k, ball_directory, cluster_directory, plot_directory, point_directory, 'Heuristik', lib.heuristic_wrapper)
 
 
 if __name__ == '__main__':

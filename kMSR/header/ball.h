@@ -7,8 +7,8 @@
 
 class Ball {
  public:
-  Ball() : center({0, 0}), radius(0.0) {}
-  Ball(const Point& center, double radius) : center(center), radius(radius) {}
+  Ball(int d);
+  Ball(const Point& center, double radius);
 
   bool contains(const Point& p) const;
 

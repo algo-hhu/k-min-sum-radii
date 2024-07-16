@@ -1,10 +1,7 @@
 #include "header/point.h"
 
-#include <cmath>
-
-Point::Point() {}
-
 Point::Point(std::vector<double> coords) : coordinates(coords) {}
+Point::Point(int dimension) : coordinates(dimension, 0.0) {}
 
 double Point::distanceTo(const Point& other) const {
   if (coordinates.size() != other.coordinates.size()) {

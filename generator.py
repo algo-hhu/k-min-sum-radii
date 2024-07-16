@@ -5,18 +5,18 @@ import os
 
 
 # Funktion zur Generierung von Zufallszentren basierend auf der Konfiguration
-def generate_centers(config):
+def generate_centers(config, dimension):
     centers = []
     for _ in range(config['number_centers']):
         # Erzeugt ein Zentrum mit zufälligen Koordinaten in jeder Dimension
-        center = [random.uniform(0, config['max_value']) for _ in range(config['dimensions'])]
+        center = [random.uniform(0, config['max_value']) for _ in range(dimension)]
         centers.append(center)
 
     return centers
 
 
 # Funktion zur Generierung von Punkten um ein gegebenes Zentrum basierend auf der Konfiguration
-def generate_points_around_center(center, config):
+def generate_points_around_center(center, config, dimension):
     # Bestimmen der Anzahl der Punkte im Cluster und des Cluster-Radius
     number_points = random.randint(
         config['min_points_per_cluster'], config['max_points_per_cluster']
@@ -29,10 +29,10 @@ def generate_points_around_center(center, config):
     while count < number_points:
         # Generieren eines zufälligen Radius und zufälliger Winkel für jede Dimension
         radius = random.uniform(0, cluster_radius)
-        angles = [random.uniform(0, 2 * math.pi) for _ in range(config['dimensions'])]
+        angles = [random.uniform(0, 2 * math.pi) for _ in range(dimension)]
         point = []
         valid_point = True
-        for i in range(config['dimensions']):
+        for i in range(dimension):
             # Berechnen der Koordinate unter Verwendung des Radius und des Winkels
             coord = radius * math.cos(angles[i]) + center[i]
             # Überprüfen, ob die Koordinate innerhalb der gültigen Grenzen liegt
@@ -49,36 +49,32 @@ def generate_points_around_center(center, config):
 
 
 # Funktion zur Generierung von Clustern basierend auf der Konfiguration
-def generate_clusters(config):
+def generate_clusters(config, dimension):
     # Generieren der Zentren
-    centers = generate_centers(config)
+    centers = generate_centers(config, dimension)
     points = []
     for center in centers:
         # Generieren der Punkte um jedes Zentrum
-        points = points + generate_points_around_center(center, config)
+        points = points + generate_points_around_center(center, config, dimension)
 
     return centers, points
 
 
 # Funktion zum Schreiben der generierten Punkte in eine CSV-Datei
-def write_clusters_to_file(points, config, file_index):
+def write_clusters_to_file(points, file_index, dimension, k):
 
     # Sicherstellen, dass das Verzeichnis existiert
-    if not os.path.exists(f'Data/{config['dimensions']}/{config['k']}/Points'):
-        os.makedirs(f'Data/{config['dimensions']}/{config['k']}/Points')
+    if not os.path.exists(f'Data/{dimension}/{k}/Points'):
+        os.makedirs(f'Data/{dimension}/{k}/Points')
 
     # Erzeugen des Dateinamens
-    file_name = f'Data/{config['dimensions']}/{config['k']}/Points/points_{file_index}.csv'
+    file_name = f'Data/{dimension}/{k}/Points/points_{file_index}.csv'
 
-    if not os.path.exists(file_name):
-        file = open(file_name, 'w')
+    with open(file_name, 'w') as file:
         for point in points:
-            # Schreiben der Dimension und der Koordinaten des Punktes in die Datei
-            file.write(f'{len(point)}')
-            for coord in point:
-                file.write(f',{coord}')
-            file.write('\n')
-        file.close()
+            # Verwenden von join, um die Koordinaten mit Kommas zu verbinden
+            line = ",".join(map(str, point))
+            file.write(line + '\n')
 
 
 # Funktion zur Verarbeitung der Befehlszeilenargumente
@@ -164,13 +160,13 @@ def handle_arguments():
 
 
 # Hauptfunktion zum Generieren der Daten
-def generate_data(config):
+def generate_data(config, dimension, k):
     random.seed(1234)
     for i in range(config['number_files']):
         # Generieren der Cluster
-        centers, points = generate_clusters(config)
+        centers, points = generate_clusters(config, dimension)
         # Schreiben der generierten Daten in eine Datei
-        write_clusters_to_file(centers + points, config, i)
+        write_clusters_to_file(centers + points, i, dimension, k)
 
 
 def main():
