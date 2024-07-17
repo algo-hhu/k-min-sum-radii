@@ -166,12 +166,9 @@ def cluster(point_files, dimension, k, ball_directory, cluster_directory, plot_d
 
         # Definieren der Pfade für die Point-, Ball-, Cluster- und Plot-Dateien
         point_path = os.path.join(point_directory, point_file)
-        ball_path = os.path.join(
-            ball_directory, algorithm, f'balls_{number}.csv')
-        cluster_path = os.path.join(
-            cluster_directory, algorithm, f'cluster_{number}.csv')
-        plot_path = os.path.join(
-            plot_directory, algorithm, f'plot_{number}.pdf')
+        ball_path = os.path.join(ball_directory, algorithm, f'balls_{number}.csv')
+        cluster_path = os.path.join(cluster_directory, algorithm, f'cluster_{number}.csv')
+        plot_path = os.path.join(plot_directory, algorithm, f'plot_{number}.pdf')
 
         # Lesen der Punkte aus der CSV-Datei und Umwandeln in ein C-Array
         c_array, numPoints = read_points_from_csv(point_path)
@@ -226,18 +223,12 @@ def cluster(point_files, dimension, k, ball_directory, cluster_directory, plot_d
             f.write(f'{point_file},{duration},{radii}\n')
 
 
-def schmidt(point_files, dimension, k, ball_directory, cluster_directory, plot_directory, point_directory):
-    # Werte für epsilon und u definieren
-    epsilon_values = [0.5]
-    u_values = [1, 10, 100, 1000, 10000]
-    num_radii_values = [5]
-
+def schmidt(point_files, dimension, k, epsilon_values, u_values, num_radii_values, ball_directory, cluster_directory, plot_directory, point_directory):
     # Verzeichnisse erstellen, falls sie nicht existieren
     os.makedirs(os.path.join(ball_directory, 'Schmidt'), exist_ok=True)
     os.makedirs(os.path.join(cluster_directory, 'Schmidt'), exist_ok=True)
     os.makedirs(os.path.join(plot_directory, 'Schmidt'), exist_ok=True)
-    os.makedirs(os.path.join(
-        f'Data/{dimension}/{k}/Results', 'Schmidt'), exist_ok=True)
+    os.makedirs(os.path.join(f'Data/{dimension}/{k}/Results', 'Schmidt'), exist_ok=True)
 
     # Regex-Muster zum Extrahieren der Nummer aus dem Dateinamen
     pattern = r'points_(\d+)\.csv'
@@ -256,12 +247,9 @@ def schmidt(point_files, dimension, k, ball_directory, cluster_directory, plot_d
             for num_radii in num_radii_values:
                 for u in u_values:
                     # Definieren der Pfade für die Ball-, Cluster- und Plot-Dateien
-                    ball_path = os.path.join(ball_directory, 'Schmidt', f'balls_{number}_u{
-                                             u}_epsilon{epsilon}_num_radii{num_radii}.csv')
-                    cluster_path = os.path.join(cluster_directory, 'Schmidt', f'cluster_{number}_u{
-                                                u}_epsilon{epsilon}_num_radii{num_radii}.csv')
-                    plot_path = os.path.join(plot_directory, 'Schmidt', f'plot_{number}_u{
-                                             u}_epsilon{epsilon}_num_radii{num_radii}.pdf')
+                    ball_path = os.path.join(ball_directory, 'Schmidt', f'balls_{number}_u{u}_epsilon{epsilon}_num_radii{num_radii}.csv')
+                    cluster_path = os.path.join(cluster_directory, 'Schmidt', f'cluster_{number}_u{u}_epsilon{epsilon}_num_radii{num_radii}.csv')
+                    plot_path = os.path.join(plot_directory, 'Schmidt', f'plot_{number}_u{u}_epsilon{epsilon}_num_radii{num_radii}.pdf')
 
                     # Lesen der Punkte aus der CSV-Datei und Umwandeln in ein C-Array
                     c_array, numPoints = read_points_from_csv(point_path)
@@ -323,8 +311,8 @@ def schmidt(point_files, dimension, k, ball_directory, cluster_directory, plot_d
                     num_radii},{duration},{radii}\n')
 
 
-def analyze_results_schmidt(config):
-    result_directory = f'Data/{config['dimensions']}/{config['k']}/Results/Schmidt'
+def analyze_results_schmidt(dimension, k):
+    result_directory = f'Data/{dimension}/{k}/Results/Schmidt'
 
     # Ergebnisse in einen DataFrame umwandeln
     df = pd.read_csv(f'{result_directory}/results.csv')
@@ -385,7 +373,7 @@ def analyze_results_schmidt(config):
     # print(improvement_df)
 
     # # Verbesserungen in eine CSV-Datei schreiben
-    # improvement_df.to_csv(f'Data/{config['dimensions']}/{config['k']}/Results/Schmidt/radius_improvement.csv', index=False)
+    # improvement_df.to_csv(f'Data/{dimension}/{k}/Results/Schmidt/radius_improvement.csv', index=False)
 
     best_mean_radius = df[(df['u'] == best_u) & (df['num_radii'] == best_num_radii) & (df['epsilon'] == best_epsilon)]['Summe_der_Radien'].mean()
     print(f'Die beste Kombination ist u={best_u}, num_radii={best_num_radii} und epsilon={best_epsilon} mit dem kleinsten durchschnittlichen Radius={best_mean_radius:.6f}.')
@@ -415,24 +403,18 @@ def analyze_results_schmidt(config):
     #     md_file.write(f'Die beste Kombination ist u={best_u}, num_radii={best_num_radii} und epsilon={best_epsilon} mit dem kleinsten durchschnittlichen Radius={best_mean_radius:.6f}.\n')
 
 
-def compare_algorithms(config):
+def compare_algorithms(dimension, k):
     # Lade die Ergebnisse
-    schmidt_results = pd.read_csv(
-        f'Data/{config['dimensions']}/{config['k']}/Results/Schmidt/results.csv')
-    gonzales_results = pd.read_csv(
-        f'Data/{config['dimensions']}/{config['k']}/Results/Gonzales/results.csv')
-    kmeans_results = pd.read_csv(
-        f'Data/{config['dimensions']}/{config['k']}/Results/KMeansPlusPlus/results.csv')
-    heuristik_results = pd.read_csv(
-        f'Data/{config['dimensions']}/{config['k']}/Results/Heuristik/results.csv')
+    schmidt_results = pd.read_csv(f'Data/{dimension}/{k}/Results/Schmidt/results.csv')
+    gonzales_results = pd.read_csv(f'Data/{dimension}/{k}/Results/Gonzales/results.csv')
+    kmeans_results = pd.read_csv(f'Data/{dimension}/{k}/Results/KMeansPlusPlus/results.csv')
+    heuristik_results = pd.read_csv(f'Data/{dimension}/{k}/Results/Heuristik/results.csv')
 
     # Beste Kombination von u, num_radii und epsilon basierend auf dem kleinsten Durchschnitt der Radien
-    best_u, best_num_radii, best_epsilon = schmidt_results.groupby(
-        ['u', 'num_radii', 'epsilon'])['Summe_der_Radien'].mean().idxmin()
+    best_u, best_num_radii, best_epsilon = schmidt_results.groupby(['u', 'num_radii', 'epsilon'])['Summe_der_Radien'].mean().idxmin()
 
     # Berechnen der Durchschnittswerte der Radien für jeden Algorithmus
-    best_schmidt_avg_radius = schmidt_results[(schmidt_results['u'] == best_u) & (
-        schmidt_results['num_radii'] == best_num_radii) & (schmidt_results['epsilon'] == best_epsilon)]['Summe_der_Radien'].mean()
+    best_schmidt_avg_radius = schmidt_results[(schmidt_results['u'] == best_u) & (schmidt_results['num_radii'] == best_num_radii) & (schmidt_results['epsilon'] == best_epsilon)]['Summe_der_Radien'].mean()
     gonzales_avg_radius = gonzales_results['Summe_der_Radien'].mean()
     kmeans_avg_radius = kmeans_results['Summe_der_Radien'].mean()
     heuristik_avg_radius = heuristik_results['Summe_der_Radien'].mean()
@@ -567,10 +549,10 @@ def compare_algorithms(config):
 
     # Ergebnisse als Tabelle speichern
     comparison_df.to_csv(
-        f'Data/{config['dimensions']}/{config['k']}/Results/comparison_all_us_epsilons.csv', index=False)
+        f'Data/{dimension}/{k}/Results/comparison_all_us_epsilons.csv', index=False)
 
     # Markdown-Datei erstellen
-    with open(f'Data/{config['dimensions']}/{config['k']}/Results/comparison_all_us_epsilons.md', 'w') as md_file:
+    with open(f'Data/{dimension}/{k}/Results/comparison_all_us_epsilons.md', 'w') as md_file:
         md_file.write(
             '# Paarweiser Vergleich der Clustering-Algorithmen für alle u- und epsilon-Werte\n\n')
         md_file.write('| u  | epsilon | num_radii | Schmidt vs Alle Besser (%) | Schmidt vs Alle Schlechter (%) | Schmidt vs Gonzales Besser (%) | Schmidt vs Gonzales Schlechter (%) | Schmidt vs KMeans++ Besser (%) | Schmidt vs KMeans++ Schlechter (%) | Schmidt vs Heuristik Besser (%) | Schmidt vs Heuristik Schlechter (%) |\n')
@@ -580,7 +562,7 @@ def compare_algorithms(config):
                           row['Schmidt vs KMeans++ Besser (%)']:.2f} | {row['Schmidt vs KMeans++ Schlechter (%)']:.2f} | {row['Schmidt vs Heuristik Besser (%)']:.2f} | {row['Schmidt vs Heuristik Schlechter (%)']:.2f} |\n')
 
     # Speichern der Dateien, bei denen Schmidt schlechter als alle anderen ist
-    with open(f'Data/{config['dimensions']}/{config['k']}/Results/Schmidt/worse_schmidt_points.md', 'w') as md_file:
+    with open(f'Data/{dimension}/{k}/Results/Schmidt/worse_schmidt_points.md', 'w') as md_file:
         md_file.write(f'u: {best_u}, num_radii: {
                       best_num_radii}, epsilon: {best_epsilon}\n')
         md_file.write('Dateien:\n')
@@ -701,8 +683,11 @@ def analyse_u(df, best_u, best_num_radii, best_epsilon, output_directory):
 
 
 def main(config):
-    dimensions = [2, 3, 4, 5]
-    ks = [2, 3, 4, 5]
+    dimensions = [2, 3,]
+    ks = [3, 4, 5]
+    epsilon_values = [0.5]
+    u_values = [1, 10, 100, 1000]
+    num_radii_values = [5]
 
     for dimension in dimensions:
         for k in ks:
@@ -721,10 +706,13 @@ def main(config):
             point_files = [f for f in os.listdir(point_directory) if f.endswith('.csv')]
 
             # Ausführung der Algorithmen
-            schmidt(point_files, dimension, k, ball_directory, cluster_directory, plot_directory, point_directory)
+            schmidt(point_files, dimension, k, epsilon_values, u_values, num_radii_values, ball_directory, cluster_directory, plot_directory, point_directory)
             cluster(point_files, dimension, k, ball_directory, cluster_directory, plot_directory, point_directory, 'Gonzales', lib.gonzales_wrapper)
             cluster(point_files, dimension, k, ball_directory, cluster_directory, plot_directory, point_directory, 'KMeansPlusPlus', lib.kmeans_wrapper)
             cluster(point_files, dimension, k, ball_directory, cluster_directory, plot_directory, point_directory, 'Heuristik', lib.heuristic_wrapper)
+
+            analyze_results_schmidt(dimension, k)
+            compare_algorithms(dimension, k)
 
 
 if __name__ == '__main__':
@@ -735,7 +723,7 @@ if __name__ == '__main__':
     main(config)
 
     # Analyse und Vergleich der Ergebnisse von Schmidt
-    analyze_results_schmidt(config)
+    #analyze_results_schmidt()
 
     # Vergleich der Ergebnisse der verschiedenen Algorithmen
-    compare_algorithms(config)
+    #compare_algorithms()
