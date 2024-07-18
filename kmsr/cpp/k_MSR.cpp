@@ -215,7 +215,7 @@ vector<Cluster> clustering(const vector<Point> &points, int k, double epsilon,
           }
         }
 
-        // localCluster = mergeCluster(localCluster);
+        localCluster = mergeCluster(localCluster);
         // Calculate the cost for the local clusters.
         double localCost = cost(localCluster);
 
