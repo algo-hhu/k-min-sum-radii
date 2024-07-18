@@ -1,5 +1,5 @@
 import ctypes
-from numbers import Integral
+from numbers import Integral, Real
 from time import time
 from typing import Any, Optional, Sequence
 
@@ -10,7 +10,7 @@ from sklearn.base import (
     ClusterMixin,
     _fit_context,
 )
-from sklearn.utils._param_validation import Interval
+from sklearn.utils._param_validation import Interval, StrOptions
 from sklearn.utils.validation import check_random_state
 
 import kmsr._core  # type: ignore
@@ -18,26 +18,15 @@ import kmsr._core  # type: ignore
 _DLL = ctypes.cdll.LoadLibrary(kmsr._core.__file__)
 
 
-# Definition von PointData-Struktur für die Verwendung in der C-Bibliothek
-class PointData(ctypes.Structure):
-    _fields_ = [
-        ("coordinates", ctypes.POINTER(ctypes.c_double)),
-        ("dimension", ctypes.c_int),
-    ]
-
-
-# Definition von ClusterData-Struktur für die Verwendung in der C-Bibliothek
-class ClusterData(ctypes.Structure):
-    _fields_ = [("points", ctypes.POINTER(PointData)), ("num_points", ctypes.c_int)]
-
-
 class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
     _parameter_constraints: dict = {
         "n_clusters": [Interval(Integral, 1, None, closed="left")],
-        "algorithm": ["auto", "schmidt", "heuristic", "gonzales", "kmeans"],
-        "epsilon": [Interval(float, 0, None, closed="left")],
+        "algorithm": [
+            StrOptions({"auto", "schmidt", "heuristic", "gonzales", "kmeans"})
+        ],
+        "epsilon": [Interval(Real, 0, None, closed="left")],
         "u": [Interval(Integral, 1, None, closed="left")],
-        "random_state": [None, Interval(Integral, 0, None, closed="left")],
+        "random_state": ["random_state"],
     }
 
     def __init__(
@@ -70,12 +59,12 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
 
     def _fit_schmidt(
         self,
-        X: np.ndarray,
+        X: Any,
         n: int,
-        centers: np.ndarray,
-        labels: np.ndarray,
-    ) -> "KMSR":
-        print(type(X), type(n), type(centers), type(labels))
+        centers: Any,
+        labels: Any,
+    ) -> int:
+
         _DLL.schmidt_wrapper.argtypes = [
             ctypes.POINTER(ctypes.c_double),
             ctypes.c_int,
@@ -86,22 +75,24 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
             ctypes.c_int,
             ctypes.POINTER(ctypes.c_int),
         ]
-        _DLL.schmidt_wrapper.restype = ctypes.POINTER(ClusterData)
+        # _DLL.schmidt_wrapper.restype = ctypes.POINTER(ClusterData)
 
-        _ = ctypes.c_int()
+        found_clusters = ctypes.c_int()
 
-        # _DLL.schmidt_wrapper(
-        #     X,
-        #     n,
-        #     self.n_features_in_,
-        #     self.n_clusters,
-        #     self.epsilon,
-        #     self.u,
-        #     self.num_radii,
-        #     ctypes.byref(found_clusters),
-        # )
+        _DLL.schmidt_wrapper(
+            X,
+            n,
+            self.n_features_in_,
+            self.n_clusters,
+            self.epsilon,
+            self.u,
+            self.num_radii,
+            ctypes.byref(found_clusters),
+            labels,
+            centers,
+        )
 
-        return self
+        return found_clusters.value
 
     def _fit(
         self,
@@ -110,13 +101,26 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
         self._validate_params()
         self._check_feature_names(X, reset=True)
 
-        _X = np.array(X, dtype=np.float64, order="C", copy=False)
+        _X = self._validate_data(
+            X,
+            accept_sparse="csr",
+            dtype=[np.float64, np.float32],
+            order="C",
+            accept_large_sparse=False,
+            copy=False,
+        )
         n_samples, self.n_features_in_ = _X.shape
 
         c_array = _X.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
         c_labels = (ctypes.c_int * n_samples)()
         c_centers = (ctypes.c_double * self.n_features_in_ * self.n_clusters)()
 
-        self._fit_schmidt(c_array, n_samples, c_centers, c_labels)
+        real_clusters = self._fit_schmidt(c_array, n_samples, c_centers, c_labels)
+
+        self.cluster_centers_ = np.ctypeslib.as_array(
+            c_centers, shape=(self.n_clusters, self.n_features_in_)
+        )
+        self.real_clusters_ = real_clusters
+        self.labels_ = np.ctypeslib.as_array(c_labels)
 
         return self

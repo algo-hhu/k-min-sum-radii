@@ -10,6 +10,7 @@
 class Point {
  public:
   Point(std::vector<double> coords);
+  Point(std::vector<double> coords, int pos);
   Point(int dimension);
 
   double distanceTo(const Point& other) const;
@@ -19,6 +20,10 @@ class Point {
   void setCoordinates(std::vector<double> newCoordinates) {
     coordinates = newCoordinates;
   }
+  int getPosition() const { return position; }
+  void setPosition(int newPosition) { position = newPosition; }
+
+  std::string print() const;
 
   bool operator<(const Point& other) const;
   bool operator==(const Point& other) const;
@@ -28,6 +33,7 @@ class Point {
 
  private:
   std::vector<double> coordinates;
+  int position = -1;
 };
 
 #endif  // POINT_H

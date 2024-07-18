@@ -1,22 +1,12 @@
 #include <Python.h>
 
+#include <iostream>
+
 #include "header/heuristic.h"
 #include "header/k_MSR.h"
 #include "header/point.h"
 
 using namespace std;
-
-struct PointData
-{
-  double *coordinates;
-  int dimension;
-};
-
-struct ClusterData
-{
-  PointData *points;
-  int numPoints;
-};
 
 vector<Point> arrayToVector(double *array, int numPoints, int dimension)
 {
@@ -28,33 +18,24 @@ vector<Point> arrayToVector(double *array, int numPoints, int dimension)
     {
       coordinates.push_back(array[i * dimension + j]);
     }
-    points.push_back(Point(coordinates));
+    points.push_back(Point(coordinates, i));
   }
   return points;
 }
 
-ClusterData *clusterToArray(vector<Cluster> clusters, int *numClusters)
+void exportCluster(vector<Cluster> clusters, int *numClusters, int *labels, double *centers)
 {
   *numClusters = clusters.size();
 
-  ClusterData *clusterData = new ClusterData[*numClusters];
   for (int i = 0; i < *numClusters; i++)
   {
     const vector<Point> &clusterPoints = clusters[i].getPoints();
-    clusterData[i].numPoints = clusterPoints.size();
-    clusterData[i].points = new PointData[clusterPoints.size()];
     for (size_t j = 0; j < clusterPoints.size(); j++)
     {
-      const vector<double> &coords = clusterPoints[j].getCoordinates();
-      clusterData[i].points[j].dimension = coords.size();
-      clusterData[i].points[j].coordinates = new double[coords.size()];
-      for (size_t k = 0; k < coords.size(); k++)
-      {
-        clusterData[i].points[j].coordinates[k] = coords[k];
-      }
+      std::cout << clusterPoints[j].print() << std::endl;
+      labels[clusterPoints[j].getPosition()] = i;
     }
   }
-  return clusterData;
 }
 
 extern "C"
@@ -63,8 +44,7 @@ extern "C"
 #if defined(_WIN32) || defined(__CYGWIN__)
   __declspec(dllexport)
 #endif
-  ClusterData *
-  schmidt_wrapper(
+  void schmidt_wrapper(
       double *pointArray,
       int numPoints,
       int dimension,
@@ -72,68 +52,73 @@ extern "C"
       double epsilon,
       int numUVectors,
       int numRadiiVectors,
-      int *numClusters)
+      int *numClusters,
+      int *labels,
+      double *centers)
   {
     vector<Point> points = arrayToVector(pointArray, numPoints, dimension);
 
     vector<Cluster> cluster =
         clustering(points, k, epsilon, numUVectors, numRadiiVectors);
 
-    return clusterToArray(cluster, numClusters);
+    exportCluster(cluster, numClusters, labels, centers);
   }
 
 #if defined(_WIN32) || defined(__CYGWIN__)
   __declspec(dllexport)
 #endif
-  ClusterData *
-  heuristic_wrapper(
+  void heuristic_wrapper(
       double *pointArray,
       int numPoints,
       int dimension,
       int k,
-      int *numClusters)
+      int *numClusters,
+      int *labels,
+      double *centers)
   {
     vector<Point> points = arrayToVector(pointArray, numPoints, dimension);
 
     vector<Cluster> cluster = heuristik(points, k);
 
-    return clusterToArray(cluster, numClusters);
+    exportCluster(cluster, numClusters, labels, centers);
   }
 
 #if defined(_WIN32) || defined(__CYGWIN__)
   __declspec(dllexport)
 #endif
-  ClusterData *
-  runGonzales(
+  void gonzales_wrapper(
       double *pointArray,
       int numPoints,
       int dimension,
       int k,
-      int *numClusters)
+      int *numClusters,
+      int *labels,
+      double *centers)
   {
     vector<Point> points = arrayToVector(pointArray, numPoints, dimension);
 
     vector<Cluster> cluster = gonzales(points, k);
 
-    return clusterToArray(cluster, numClusters);
+    exportCluster(cluster, numClusters, labels, centers);
   }
 
 #if defined(_WIN32) || defined(__CYGWIN__)
   __declspec(dllexport)
 #endif
-  ClusterData *
-  runKMeans(
+  void kmeans_wrapper(
       double *pointArray,
       int numPoints,
       int dimension,
       int k,
-      int *numClusters)
+      int *numClusters,
+      int *labels,
+      double *centers)
   {
     vector<Point> points = arrayToVector(pointArray, numPoints, dimension);
 
     vector<Cluster> cluster = kMeansPlusPlus(points, k);
 
-    return clusterToArray(cluster, numClusters);
+    exportCluster(cluster, numClusters, labels, centers);
   }
 
 } // extern "C"

@@ -7,12 +7,12 @@ from typing import Any, Dict, List, Tuple
 
 # Function for generating random centers based on the configuration
 def generate_centers(
-    number_centers: int, max_value: float, dimension: int
+    number_centers: int, max_value: float, dimensions: int
 ) -> List[List[float]]:
     centers = []
     for _ in range(number_centers):
         # Create a center with random coordinates in each dimension
-        center = [random.uniform(0, max_value) for _ in range(dimension)]
+        center = [random.uniform(0, max_value) for _ in range(dimensions)]
         centers.append(center)
 
     return centers
@@ -26,7 +26,7 @@ def generate_points_around_center(
     min_cluster_radius: float,
     max_cluster_radius: float,
     max_value: float,
-    dimension: int,
+    dimensions: int,
 ) -> List[List[float]]:
     # Determine the number of points in the cluster and the cluster radius
     number_points = random.randint(min_points_per_cluster, max_points_per_cluster)
@@ -36,10 +36,10 @@ def generate_points_around_center(
     while count < number_points:
         # Generate a random radius and random angle for each dimension
         radius = random.uniform(0, cluster_radius)
-        angles = [random.uniform(0, 2 * math.pi) for _ in range(dimension)]
+        angles = [random.uniform(0, 2 * math.pi) for _ in range(dimensions)]
         point = []
         valid_point = True
-        for i in range(dimension):
+        for i in range(dimensions):
             # Calculate the coordinate using the radius and angle
             coord = radius * math.cos(angles[i]) + center[i]
             # Check if the coordinate is within the valid limits
@@ -63,10 +63,10 @@ def generate_clusters(
     max_points_per_cluster: int,
     min_cluster_radius: float,
     max_cluster_radius: float,
-    dimension: int,
+    dimensions: int,
 ) -> Tuple[List[List[float]], List[List[float]]]:
     # Generate the centers
-    centers = generate_centers(number_centers, max_value, dimension)
+    centers = generate_centers(number_centers, max_value, dimensions)
     points: List[List[float]] = []
     for center in centers:
         # Generate points around each center
@@ -77,7 +77,7 @@ def generate_clusters(
             min_cluster_radius=min_cluster_radius,
             max_cluster_radius=max_cluster_radius,
             max_value=max_value,
-            dimension=dimension,
+            dimensions=dimensions,
         )
 
     return centers, points
@@ -177,7 +177,7 @@ def generate_data(config: Dict[str, Any]) -> None:
         max_points_per_cluster=config["max_points_per_cluster"],
         min_cluster_radius=config["min_cluster_radius"],
         max_cluster_radius=config["max_cluster_radius"],
-        dimension=config["dimensions"],
+        dimensions=config["dimensions"],
     )
     # Write the generated data to a file
     write_clusters_to_file(
