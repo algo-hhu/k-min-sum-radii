@@ -5,7 +5,7 @@ Point::Point(int dimension) : coordinates(dimension, 0.0) {}
 
 double Point::distanceTo(const Point& other) const {
   if (coordinates.size() != other.coordinates.size()) {
-    throw std::invalid_argument("Die Punkte müssen dieselbe Dimension haben!");
+    throw std::invalid_argument("The points should have the same dimensions!");
   }
   double sum = 0.0;
   for (size_t i = 0; i < coordinates.size(); i++) {
@@ -39,7 +39,7 @@ bool Point::operator!=(const Point& other) const { return !(*this == other); }
 
 Point Point::operator+(const Point& other) const {
   if (coordinates.size() != other.coordinates.size()) {
-    throw std::invalid_argument("Die Punkte müssen dieselbe Dimension haben!");
+    throw std::invalid_argument("The points should have the same dimensions!");
   }
   std::vector<double> result_coords(coordinates.size());
   for (size_t i = 0; i < coordinates.size(); i++) {
