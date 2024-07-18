@@ -103,7 +103,7 @@ extern "C"
 
     *numClusters = exportCluster(cluster, labels, centers, radii, dimension);
 
-    return 0.0;
+    return cost(cluster);
   }
 
 #if defined(_WIN32) || defined(__CYGWIN__)
@@ -125,7 +125,7 @@ extern "C"
 
     *numClusters = exportCluster(cluster, labels, centers, radii, dimension);
 
-    return 0.0;
+    return cost(cluster);
   }
 
 #if defined(_WIN32) || defined(__CYGWIN__)
@@ -147,7 +147,7 @@ extern "C"
 
     *numClusters = exportCluster(cluster, labels, centers, radii, dimension);
 
-    return 0.0;
+    return cost(cluster);
   }
 
 } // extern "C"
