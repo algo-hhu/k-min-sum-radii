@@ -25,7 +25,8 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
             StrOptions({"auto", "schmidt", "heuristic", "gonzales", "kmeans"})
         ],
         "epsilon": [Interval(Real, 0, None, closed="left")],
-        "u": [Interval(Integral, 1, None, closed="left")],
+        "n_u": [Interval(Integral, 1, None, closed="left")],
+        "n_test_radii": [Interval(Integral, 1, None, closed="left")],
         "random_state": ["random_state"],
     }
 
@@ -34,16 +35,17 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
         n_clusters: int = 3,
         algorithm: str = "auto",
         epsilon: float = 0.5,
-        u: int = 10,
+        n_u: int = 10,
+        n_test_radii: int = 5,
         random_state: Optional[int] = None,
     ) -> None:
         self._seed = int(time()) if random_state is None else random_state
         self.n_clusters = n_clusters
         self.epsilon = epsilon
         self.algorithm = "schmidt" if algorithm == "auto" else algorithm
-        self.u = u
+        self.n_u = n_u
+        self.n_test_radii = n_test_radii
         self.random_state = check_random_state(self._seed)
-        self.num_radii = 5  # TODO: what does this do?
 
     @_fit_context(prefer_skip_nested_validation=True)
     def fit(
@@ -84,11 +86,12 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
 
         c_labels = (ctypes.c_int * n_samples)()
         c_centers = (ctypes.c_double * self.n_features_in_ * self.n_clusters)()
+        c_radii = (ctypes.c_double * self.n_clusters)()
 
         if self.algorithm == "schmidt":
             c_epsilon = ctypes.c_double(self.epsilon)
-            c_u = ctypes.c_int(self.u)
-            c_num_radii = ctypes.c_int(self.num_radii)
+            c_u = ctypes.c_int(self.n_u)
+            c_num_radii = ctypes.c_int(self.n_test_radii)
             _DLL.schmidt_wrapper.restype = ctypes.c_double
 
             self.inertia_ = _DLL.schmidt_wrapper(
@@ -102,6 +105,7 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
                 ctypes.byref(found_clusters),
                 c_labels,
                 c_centers,
+                c_radii,
             )
         else:
             if self.algorithm == "heuristic":
@@ -122,6 +126,7 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
                 ctypes.byref(found_clusters),
                 c_labels,
                 c_centers,
+                c_radii,
             )
 
         self.real_clusters_ = found_clusters.value
@@ -129,6 +134,12 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
         self.cluster_centers_ = np.ctypeslib.as_array(
             c_centers, shape=(self.n_clusters, self.n_features_in_)
         )
+        self.cluster_radii_ = np.ctypeslib.as_array(c_radii)
+
+        # Crop the centers and the radii in case the algorithm found less clusters
+        self.cluster_centers_ = self.cluster_centers_[: self.real_clusters_]
+        self.cluster_radii_ = self.cluster_radii_[: self.real_clusters_]
+
         self.labels_ = np.ctypeslib.as_array(c_labels)
 
         return self

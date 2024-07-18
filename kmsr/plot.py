@@ -6,10 +6,11 @@ import numpy as np
 from matplotlib.patches import Circle
 
 
-def plot_cluster(
+def plot_result(
     points: Sequence[Sequence[float]],
     clusters: Optional[Sequence[int]] = None,
-    balls: Optional[Sequence[Sequence[float]]] = None,
+    centers: Optional[Sequence[Sequence[float]]] = None,
+    radii: Optional[Sequence[float]] = None,
     output_path: Optional[Path] = None,
     show: bool = True,
 ) -> None:
@@ -22,11 +23,27 @@ def plot_cluster(
 
     ax.scatter(_points[:, 0], _points[:, 1], c=clusters, s=50, cmap="Set2")
 
-    if balls is not None:
-        for x, y, radius in balls:
-            circle = Circle(x, y, radius, fill=False, edgecolor="black")
+    if centers is not None and radii is not None:
+        for i, ((x, y), radius) in enumerate(zip(centers, radii)):
+            circle = Circle(
+                (x, y), radius, fill=False, edgecolor="black", linestyle="--"
+            )
             ax.add_patch(circle)
             ax.plot(x, y, "+", color="black")
+
+            if clusters is not None:
+                points_in_cluster = _points[clusters == i]
+                furthest_point = points_in_cluster[
+                    np.argmax(np.linalg.norm(points_in_cluster - centers[i], axis=1))
+                ]
+                ax.add_line(
+                    plt.Line2D(
+                        [centers[i][0], furthest_point[0]],
+                        [centers[i][1], furthest_point[1]],
+                        color="black",
+                        linestyle="--",
+                    )
+                )
 
     ax.set_xlabel("Feature 1")
     ax.set_ylabel("Feature 2")
