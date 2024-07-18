@@ -8,14 +8,16 @@ using namespace std;
 
 // Funktionsobjekt, um einen Point-Iterator auf den entsprechenden
 // Koordinaten-Iterator abzubilden
-struct PointCoordAccessor {
+struct PointCoordAccessor
+{
   typedef vector<Point>::const_iterator Pit;
   typedef vector<double>::const_iterator Cit;
 
   inline Cit operator()(Pit it) const { return it->getCoordinates().begin(); }
 };
 
-Ball findMinEnclosingBall(const vector<Point> &points) {
+Ball findMinEnclosingBall(const vector<Point> &points)
+{
   int dimension = points.front().getCoordinates().size();
 
   Miniball::Miniball<PointCoordAccessor> mb(dimension, points.begin(),
