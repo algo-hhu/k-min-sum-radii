@@ -6,6 +6,7 @@
 #include "header/k_MSR.h"
 #include "header/point.h"
 #include "header/welzl.h"
+#include "header/yildirim.h"
 
 using namespace std;
 
@@ -32,23 +33,22 @@ int exportCluster(vector<Cluster> clusters, int *labels, double *centers, double
   {
     for (size_t j = 0; j < clusters[i].getPoints().size(); j++)
     {
-      labels[clusters[i].getPoints()[j].getPosition()] = i;
+      labels[clusters[i].getPoints()[j].getPosition()] = numClusters;
     }
     // If the cluster actually has points we
     // - Consider it a cluster
     // - Add the center and radius to the output arrays
     if (clusters[i].getPoints().size() > 0)
     {
-      numClusters++;
-
       Ball ball = findMinEnclosingBall(clusters[i].getPoints());
-
       for (size_t j = 0; j < ball.getCenter().getCoordinates().size(); j++)
       {
-        centers[i * dimensions + j] = ball.getCenter().getCoordinates()[j];
+        centers[numClusters * dimensions + j] = ball.getCenter().getCoordinates()[j];
       }
 
-      radii[i] = ball.getRadius();
+      radii[numClusters] = ball.getRadius();
+
+      numClusters++;
     }
   }
   return numClusters;
