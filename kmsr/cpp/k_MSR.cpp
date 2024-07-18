@@ -109,7 +109,7 @@ vector<vector<double>> getRadii(double rmax, int k, double epsilon)
 }
 
 vector<vector<double>> getRandomRadii(double rmax, int k, double epsilon,
-                                      int numRadiiVectors)
+                                      int numRadiiVectors, int seed)
 {
   vector<double> set;
 
@@ -125,7 +125,7 @@ vector<vector<double>> getRandomRadii(double rmax, int k, double epsilon,
   vector<vector<double>> result(numRadiiVectors);
 
   // Initialize a Mersenne Twister generator with the seed of 'rd'.
-  mt19937 gen(1234);
+  mt19937 gen(seed);
 
   // Define a uniform distribution for integers between 0 and set.size()-1.
   uniform_int_distribution<> distrib(0, set.size() - 1);
@@ -148,7 +148,7 @@ vector<vector<double>> getRandomRadii(double rmax, int k, double epsilon,
 }
 
 // Generates a list of vectors, each containing random integers between 0 and k-1.
-vector<vector<int>> getU(int n, int k, double epsilon, int numUVectors)
+vector<vector<int>> getU(int n, int k, double epsilon, int numUVectors, int seed)
 {
   // Calculate the length of each vector based on the given parameters k and epsilon.
   int length =
@@ -157,7 +157,7 @@ vector<vector<int>> getU(int n, int k, double epsilon, int numUVectors)
   vector<vector<int>> result(numUVectors);
 
   // Initialize a Mersenne Twister generator with the seed of 'rd'.
-  mt19937 gen(1234);
+  mt19937 gen(seed);
 
   // Define a uniform distribution for integers between 0 and k-1.
   uniform_int_distribution<> distrib(0, k - 1);
@@ -224,14 +224,14 @@ vector<Ball> selection(const vector<Point> &points, int k, const vector<int> &u,
 
 // Main function that calculates the clusters.
 double clustering(const vector<Point> &points, int k, double epsilon,
-                  int numUVectors, int numRadiiVectors, vector<Cluster> &bestCluster)
+                  int numUVectors, int numRadiiVectors, int seed, vector<Cluster> &bestCluster)
 {
-  double rmax = gonzalesrmax(points, k);
+  double rmax = gonzalesrmax(points, k, seed);
 
   // Calculate the radii and u values based on 'rmax', 'k', and 'epsilon'.
   vector<vector<double>> radii =
-      getRandomRadii(rmax, k, epsilon, numRadiiVectors);
-  vector<vector<int>> u = getU(points.size(), k, epsilon, numUVectors);
+      getRandomRadii(rmax, k, epsilon, numRadiiVectors, seed);
+  vector<vector<int>> u = getU(points.size(), k, epsilon, numUVectors, seed);
 
   // Initialize the 'bestCluster' by making all points part of a cluster.
   bestCluster[0].setPoints(points);

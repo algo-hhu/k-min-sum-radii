@@ -131,9 +131,9 @@ Point computeCentroid(const vector<Point> &points)
   return Point(centroidCoords);
 }
 
-vector<Cluster> gonzales(vector<Point> &points, int k)
+vector<Cluster> gonzales(vector<Point> &points, int k, int seed)
 {
-  srand(1234);
+  srand(seed);
   int n = points.size();
   vector<Point> centers;
   centers.push_back(points[rand() % n]);
@@ -168,11 +168,11 @@ vector<Cluster> gonzales(vector<Point> &points, int k)
   return mergeCluster(clusters);
 }
 
-vector<Cluster> kMeansPlusPlus(vector<Point> &points, int k)
+vector<Cluster> kMeansPlusPlus(vector<Point> &points, int k, int seed)
 {
   int n = points.size();
   vector<Point> centers;
-  mt19937 gen(1234);
+  mt19937 gen(seed);
   uniform_int_distribution<> dis(0, n - 1);
 
   // Choose the first center randomly

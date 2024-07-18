@@ -71,13 +71,14 @@ extern "C"
       int *numClusters,
       int *labels,
       double *centers,
-      double *radii)
+      double *radii,
+      int seed)
   {
     vector<Point> points = arrayToVector(pointArray, numPoints, dimension);
     vector<Cluster> bestCluster(k);
 
     double cost =
-        clustering(points, k, epsilon, numUVectors, numRadiiVectors, bestCluster);
+        clustering(points, k, epsilon, numUVectors, numRadiiVectors, seed, bestCluster);
 
     *numClusters = exportCluster(bestCluster, labels, centers, radii, dimension);
 
@@ -95,7 +96,8 @@ extern "C"
       int *numClusters,
       int *labels,
       double *centers,
-      double *radii)
+      double *radii,
+      int seed) // The seed does not get used here but it's for compatibility
   {
     vector<Point> points = arrayToVector(pointArray, numPoints, dimension);
 
@@ -117,11 +119,12 @@ extern "C"
       int *numClusters,
       int *labels,
       double *centers,
-      double *radii)
+      double *radii,
+      int seed)
   {
     vector<Point> points = arrayToVector(pointArray, numPoints, dimension);
 
-    vector<Cluster> cluster = gonzales(points, k);
+    vector<Cluster> cluster = gonzales(points, k, seed);
 
     *numClusters = exportCluster(cluster, labels, centers, radii, dimension);
 
@@ -139,11 +142,12 @@ extern "C"
       int *numClusters,
       int *labels,
       double *centers,
-      double *radii)
+      double *radii,
+      int seed)
   {
     vector<Point> points = arrayToVector(pointArray, numPoints, dimension);
 
-    vector<Cluster> cluster = kMeansPlusPlus(points, k);
+    vector<Cluster> cluster = kMeansPlusPlus(points, k, seed);
 
     *numClusters = exportCluster(cluster, labels, centers, radii, dimension);
 

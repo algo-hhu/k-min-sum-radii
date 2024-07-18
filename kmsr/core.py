@@ -83,6 +83,7 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
         c_features = ctypes.c_int(self.n_features_in_)
         c_clusters = ctypes.c_int(self.n_clusters)
         found_clusters = ctypes.c_int()
+        c_seed = ctypes.c_int(self._seed)
 
         c_labels = (ctypes.c_int * n_samples)()
         c_centers = (ctypes.c_double * self.n_features_in_ * self.n_clusters)()
@@ -106,6 +107,7 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
                 c_labels,
                 c_centers,
                 c_radii,
+                c_seed,
             )
         else:
             if self.algorithm == "heuristic":
@@ -127,6 +129,7 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
                 c_labels,
                 c_centers,
                 c_radii,
+                c_seed,
             )
 
         self.real_clusters_ = found_clusters.value
