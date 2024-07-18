@@ -25,13 +25,17 @@ vector<Point> arrayToVector(double *array, int numPoints, int dimension)
 
 void exportCluster(vector<Cluster> clusters, int *numClusters, int *labels, double *centers)
 {
-  *numClusters = clusters.size();
+  *numClusters = 0;
 
   for (int i = 0; i < *numClusters; i++)
   {
     for (size_t j = 0; j < clusters[i].getPoints().size(); j++)
     {
       labels[clusters[i].getPoints()[j].getPosition()] = i;
+    }
+    if (clusters[i].getPoints().size() > 0)
+    {
+      *numClusters++;
     }
   }
 }
