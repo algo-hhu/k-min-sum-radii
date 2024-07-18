@@ -100,6 +100,9 @@ def plot_multiple_results(
 
     fig, axs = plt.subplots(1, ll, figsize=(10 * ll, 10))
 
+    if ll == 1:
+        axs = [axs]
+
     if clusterings is None:
         clusterings = [None] * ll
 
