@@ -23,11 +23,11 @@ vector<Point> arrayToVector(double *array, int numPoints, int dimension)
   return points;
 }
 
-void exportCluster(vector<Cluster> clusters, int *numClusters, int *labels, double *centers)
+int exportCluster(vector<Cluster> clusters, int *labels, double *centers)
 {
-  *numClusters = 0;
+  int numClusters = 0;
 
-  for (int i = 0; i < clusters.size(); i++)
+  for (size_t i = 0; i < clusters.size(); i++)
   {
     for (size_t j = 0; j < clusters[i].getPoints().size(); j++)
     {
@@ -36,9 +36,10 @@ void exportCluster(vector<Cluster> clusters, int *numClusters, int *labels, doub
 
     if (clusters[i].getPoints().size() > 0)
     {
-      *numClusters++;
+      numClusters++;
     }
   }
+  return numClusters;
 }
 
 extern "C"
@@ -47,7 +48,7 @@ extern "C"
 #if defined(_WIN32) || defined(__CYGWIN__)
   __declspec(dllexport)
 #endif
-  void schmidt_wrapper(
+  double schmidt_wrapper(
       double *pointArray,
       int numPoints,
       int dimension,
@@ -60,11 +61,14 @@ extern "C"
       double *centers)
   {
     vector<Point> points = arrayToVector(pointArray, numPoints, dimension);
+    vector<Cluster> bestCluster(k);
 
-    vector<Cluster> cluster =
-        clustering(points, k, epsilon, numUVectors, numRadiiVectors);
+    double cost =
+        clustering(points, k, epsilon, numUVectors, numRadiiVectors, bestCluster);
 
-    exportCluster(cluster, numClusters, labels, centers);
+    *numClusters = exportCluster(bestCluster, labels, centers);
+
+    return cost;
   }
 
 #if defined(_WIN32) || defined(__CYGWIN__)
@@ -83,7 +87,7 @@ extern "C"
 
     vector<Cluster> cluster = heuristik(points, k);
 
-    exportCluster(cluster, numClusters, labels, centers);
+    *numClusters = exportCluster(cluster, labels, centers);
   }
 
 #if defined(_WIN32) || defined(__CYGWIN__)
@@ -102,7 +106,7 @@ extern "C"
 
     vector<Cluster> cluster = gonzales(points, k);
 
-    exportCluster(cluster, numClusters, labels, centers);
+    *numClusters = exportCluster(cluster, labels, centers);
   }
 
 #if defined(_WIN32) || defined(__CYGWIN__)
@@ -121,7 +125,7 @@ extern "C"
 
     vector<Cluster> cluster = kMeansPlusPlus(points, k);
 
-    exportCluster(cluster, numClusters, labels, centers);
+    *numClusters = exportCluster(cluster, labels, centers);
   }
 
 } // extern "C"

@@ -89,8 +89,9 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
             c_epsilon = ctypes.c_double(self.epsilon)
             c_u = ctypes.c_int(self.u)
             c_num_radii = ctypes.c_int(self.num_radii)
+            _DLL.schmidt_wrapper.restype = ctypes.c_double
 
-            _DLL.schmidt_wrapper(
+            self.inertia_ = _DLL.schmidt_wrapper(
                 c_array,
                 c_n,
                 c_features,
@@ -111,7 +112,9 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
                 wrapper_function = _DLL.kmeans_wrapper
             else:
                 raise ValueError(f"Invalid algorithm: {self.algorithm}")
-            wrapper_function(
+            wrapper_function.restype = ctypes.c_double
+
+            self.inertia_ = wrapper_function(
                 c_array,
                 c_n,
                 c_features,

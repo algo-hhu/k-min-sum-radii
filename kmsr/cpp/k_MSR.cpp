@@ -209,9 +209,8 @@ vector<Ball> selection(const vector<Point> &points, int k, const vector<int> &u,
 }
 
 // Hauptfunktion, die die Cluster berechnet.
-vector<Cluster> clustering(const vector<Point> &points, int k, double epsilon,
-                           int numUVectors, int numRadiiVectors) {
-  vector<Cluster> bestCluster(k);
+double clustering(const vector<Point> &points, int k, double epsilon,
+                           int numUVectors, int numRadiiVectors, vector<Cluster> &bestCluster) {
   double rmax = gonzalesrmax(points, k);
 
   // Berechnung der Radien und u-Werte basierend auf 'rmax', 'k' und 'epsilon'.
@@ -265,5 +264,5 @@ vector<Cluster> clustering(const vector<Point> &points, int k, double epsilon,
     }
   }
 
-  return bestCluster;
+  return bestCost;
 }

@@ -25,9 +25,9 @@ bool containsAllPoints(const std::vector<Point>& points,
 
 double cost(std::vector<Cluster>& cluster);
 
-std::vector<Cluster> clustering(const std::vector<Point>& points, int k,
+double clustering(const std::vector<Point>& points, int k,
                                 double epsilon, int numUVectors,
-                                int numRadiiVectors);
+                                int numRadiiVectors, std::vector<Cluster>& bestCluster);
 
 std::vector<std::vector<double>> getRandomRadii(double rmax, int k,
                                                 double epsilon,
