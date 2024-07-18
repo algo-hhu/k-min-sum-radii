@@ -123,3 +123,5 @@ def plot_multiple_results(
         )
     if show:
         plt.show()
+
+    plt.close()
