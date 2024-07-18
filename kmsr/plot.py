@@ -111,8 +111,10 @@ def plot_multiple_results(
     if titles is None:
         titles = [f"Plot {i}" for i in range(ll)]
 
-    for params in zip(clusterings, centers, radii, axs, titles):
-        plot_2d_ax(np.array(points), *params)
+    for clus, cent, rad, ax, title in zip(clusterings, centers, radii, axs, titles):
+        plot_2d_ax(
+            np.array(points), np.array(clus), np.array(cent), np.array(rad), ax, title
+        )
 
     if output_path is not None:
         plt.savefig(
