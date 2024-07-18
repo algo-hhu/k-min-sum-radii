@@ -29,11 +29,9 @@ void exportCluster(vector<Cluster> clusters, int *numClusters, int *labels, doub
 
   for (int i = 0; i < *numClusters; i++)
   {
-    const vector<Point> &clusterPoints = clusters[i].getPoints();
-    for (size_t j = 0; j < clusterPoints.size(); j++)
+    for (size_t j = 0; j < clusters[i].getPoints().size(); j++)
     {
-      std::cout << clusterPoints[j].print() << std::endl;
-      labels[clusterPoints[j].getPosition()] = i;
+      labels[clusters[i].getPoints()[j].getPosition()] = i;
     }
   }
 }
