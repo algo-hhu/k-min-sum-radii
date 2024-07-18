@@ -1,8 +1,9 @@
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import List, Optional, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
 from matplotlib.patches import Circle
 
 
@@ -98,10 +99,11 @@ def plot_multiple_results(
     else:
         ll = 1
 
-    fig, axs = plt.subplots(1, ll, figsize=(10 * ll, 10))
-
     if ll == 1:
-        axs = [axs]
+        fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+        axs: List[Axes] = [ax]
+    else:
+        fig, axs = plt.subplots(1, ll, figsize=(10 * ll, 10))  # type: ignore
 
     if clusterings is None:
         clusterings = [None] * ll
