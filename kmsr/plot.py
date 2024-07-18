@@ -60,7 +60,14 @@ def plot_result(
 
     fig, ax = plt.subplots(figsize=(10, 10))
 
-    plot_2d_ax(np.array(points), clusters, centers, radii, ax, title)
+    plot_2d_ax(
+        np.array(points),
+        np.array(clusters),
+        np.array(centers),
+        np.array(radii),
+        ax,
+        title,
+    )
 
     if output_path is not None:
         plt.savefig(
