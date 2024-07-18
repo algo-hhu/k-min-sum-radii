@@ -240,7 +240,7 @@ vector<Cluster> kMeansPlusPlus(vector<Point> &points, int k)
   return mergeCluster(clusters);
 }
 
-vector<Cluster> heuristic(vector<Point> &points, int k)
+vector<Cluster> heuristik(vector<Point> &points, int k)
 {
   int n = points.size();
   vector<Cluster> bestCluster;
@@ -248,7 +248,7 @@ vector<Cluster> heuristic(vector<Point> &points, int k)
       Cluster(points)); // Initialize with all points in one cluster
   vector<vector<double>> distances(n, vector<double>(n, 0));
 
-  // Calculation of distances between all points
+// Calculation of distances between all points
 #pragma omp parallel for collapse(2)
   for (int i = 0; i < n; i++)
   {
