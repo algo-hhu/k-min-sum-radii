@@ -8,10 +8,10 @@ from matplotlib.patches import Circle
 
 def plot_2d_ax(
     points: np.ndarray,
-    clusters: Optional[np.ndarray],
-    centers: Optional[np.ndarray],
-    radii: Optional[np.ndarray],
     ax: plt.Axes,
+    clusters: Optional[Sequence[int]] = None,
+    centers: Optional[Sequence[Sequence[float]]] = None,
+    radii: Optional[Sequence[float]] = None,
     title: Optional[str] = None,
 ) -> None:
     ax.scatter(points[:, 0], points[:, 1], c=clusters, s=50, cmap="Set2")
@@ -25,6 +25,7 @@ def plot_2d_ax(
             ax.plot(x, y, "+", color="black")
 
             if clusters is not None:
+                clusters = np.array(clusters)
                 points_in_cluster = points[clusters == i]
                 furthest_point = points_in_cluster[
                     np.argmax(np.linalg.norm(points_in_cluster - centers[i], axis=1))
@@ -60,14 +61,7 @@ def plot_result(
 
     fig, ax = plt.subplots(figsize=(10, 10))
 
-    plot_2d_ax(
-        np.array(points),
-        np.array(clusters),
-        np.array(centers),
-        np.array(radii),
-        ax,
-        title,
-    )
+    plot_2d_ax(np.array(points), ax, clusters, centers, radii, title)
 
     if output_path is not None:
         plt.savefig(
@@ -118,10 +112,8 @@ def plot_multiple_results(
     if titles is None:
         titles = [f"Plot {i}" for i in range(ll)]
 
-    for clus, cent, rad, ax, title in zip(clusterings, centers, radii, axs, titles):
-        plot_2d_ax(
-            np.array(points), np.array(clus), np.array(cent), np.array(rad), ax, title
-        )
+    for params in zip(axs, clusterings, centers, radii, titles):
+        plot_2d_ax(np.array(points), *params)
 
     if output_path is not None:
         plt.savefig(
