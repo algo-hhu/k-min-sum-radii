@@ -16,9 +16,14 @@ class TestFLSPP(unittest.TestCase):
             max_cluster_radius=2,
             dimensions=2,
         )
-        kmsr = KMSR(n_clusters=3)
-
-        kmsr.fit(points)
+        for algo in ["schmidt", "heuristic", "gonzales", "kmeans"]:
+            with self.subTest(msg=f"{algo}"):
+                costs = []
+                for i in range(50):
+                    kmsr = KMSR(n_clusters=3, algorithm=algo, random_state=i)
+                    kmsr.fit(points)
+                    costs.append(kmsr.inertia_)
+                # print(algo, sum(costs) / len(costs))
 
 
 if __name__ == "__main__":
