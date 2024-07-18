@@ -169,7 +169,6 @@ def handle_arguments() -> Dict[str, Any]:
 
 # Main function for generating the data
 def generate_data(config: Dict[str, Any]) -> None:
-    random.seed(1234)
     # Generate the clusters
     centers, points = generate_clusters(
         number_centers=config["number_centers"],
@@ -191,6 +190,7 @@ def generate_data(config: Dict[str, Any]) -> None:
 
 
 def main() -> None:
+    random.seed(1234)
     config = handle_arguments()
     generate_data(config)
 
