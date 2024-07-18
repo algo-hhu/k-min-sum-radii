@@ -15,19 +15,12 @@ std::vector<Ball> selection(const std::vector<Point>& points, int k,
 
 std::vector<std::vector<double>> getRadii(double rmax, int k, double epsilon);
 
-double logBase(double x, double b);
-
 std::vector<std::vector<int>> getU(int n, int k, double epsilon,
                                    int numUVectors, int seed);
 
-bool containsAllPoints(const std::vector<Point>& points,
-                       const std::vector<Ball>& balls);
-
-double cost(std::vector<Cluster>& cluster);
-
-double clustering(const std::vector<Point>& points, int k,
+std::vector<Cluster> clustering(const std::vector<Point>& points, int k,
                                 double epsilon, int numUVectors,
-                                int numRadiiVectors, int seed, std::vector<Cluster>& bestCluster);
+                                int numRadiiVectors, int seed);
 
 std::vector<std::vector<double>> getRandomRadii(double rmax, int k,
                                                 double epsilon,

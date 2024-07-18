@@ -3,65 +3,12 @@
 #include <random>
 
 #include "../header/k_MSR.h"
+#include "../header/util.h"
 #include "../header/gonzales.h"
-#include "../header/welzl.h"
+#include "../header/heuristic.h"
 #include "../header/yildirim.h"
 
 using namespace std;
-
-// Calculates the logarithm of a number 'x' with base 'b'.
-double logBase(double x, double b) { return log(x) / log(b); }
-
-// Checks if every point in the 'points' list is contained in at least one ball in 'balls'.
-bool containsAllPoints(const vector<Point> &points, const vector<Ball> &balls)
-{
-  for (const Point &p : points)
-  {
-    bool isContained = false;
-    for (const Ball &b : balls)
-    {
-      if (b.contains(p))
-      {
-        isContained = true;
-        break;
-      }
-    }
-    if (!isContained)
-    {
-      return false; // Early exit if a point is not contained in any ball
-    }
-  }
-
-  return true; // All points are contained in at least one ball
-}
-
-// Checks if the point 'p' is contained in at least one ball in the 'balls' list.
-bool containsPoint(const Point &p, const vector<Ball> &balls)
-{
-  for (const Ball &b : balls)
-  {
-    if (b.contains(p))
-    {
-      return true;
-    }
-  }
-  return false;
-}
-
-// Calculates the total cost for all clusters based on the radius of the smallest enclosing ball.
-double cost(vector<Cluster> &cluster)
-{
-  double result = 0;
-
-  for (Cluster &c : cluster)
-  {
-    if (!c.getPoints().empty())
-    {
-      result += findMinEnclosingBall(c.getPoints()).getRadius();
-    }
-  }
-  return result;
-}
 
 // Calculates a vector of vectors of radii for a given maximum radius, number of balls k, and accuracy epsilon.
 vector<vector<double>> getRadii(double rmax, int k, double epsilon)
@@ -223,9 +170,10 @@ vector<Ball> selection(const vector<Point> &points, int k, const vector<int> &u,
 }
 
 // Main function that calculates the clusters.
-double clustering(const vector<Point> &points, int k, double epsilon,
-                  int numUVectors, int numRadiiVectors, int seed, vector<Cluster> &bestCluster)
+vector<Cluster> clustering(const vector<Point> &points, int k, double epsilon,
+                  int numUVectors, int numRadiiVectors, int seed)
 {
+  vector<Cluster> bestCluster(k);
   double rmax = gonzalesrmax(points, k, seed);
 
   // Calculate the radii and u values based on 'rmax', 'k', and 'epsilon'.
@@ -267,6 +215,7 @@ double clustering(const vector<Point> &points, int k, double epsilon,
           }
         }
 
+        // localCluster = mergeCluster(localCluster);
         // Calculate the cost for the local clusters.
         double localCost = cost(localCluster);
 
@@ -283,5 +232,6 @@ double clustering(const vector<Point> &points, int k, double epsilon,
     }
   }
 
-  return bestCost;
+
+  return bestCluster;
 }

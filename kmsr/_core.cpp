@@ -2,11 +2,11 @@
 
 #include <iostream>
 
+#include "header/util.h"
 #include "header/heuristic.h"
 #include "header/k_MSR.h"
 #include "header/point.h"
 #include "header/welzl.h"
-#include "header/yildirim.h"
 
 using namespace std;
 
@@ -75,14 +75,13 @@ extern "C"
       int seed)
   {
     vector<Point> points = arrayToVector(pointArray, numPoints, dimension);
-    vector<Cluster> bestCluster(k);
 
-    double cost =
-        clustering(points, k, epsilon, numUVectors, numRadiiVectors, seed, bestCluster);
+    vector<Cluster> cluster =
+        clustering(points, k, epsilon, numUVectors, numRadiiVectors, seed);
 
-    *numClusters = exportCluster(bestCluster, labels, centers, radii, dimension);
+    *numClusters = exportCluster(cluster, labels, centers, radii, dimension);
 
-    return cost;
+    return cost(cluster);
   }
 
 #if defined(_WIN32) || defined(__CYGWIN__)
