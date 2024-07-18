@@ -20,6 +20,7 @@ pre-commit = "^2.14.0"
 flake8 = "^3.9.2"
 mypy = "^1.10.0"
 matplotlib = "^3.9.1"
+pandas = "^2.2.2"
 
 [tool.poetry.build]
 script = "build_extension.py"
