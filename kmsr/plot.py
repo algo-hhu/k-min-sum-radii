@@ -12,6 +12,7 @@ def plot_2d_ax(
     centers: np.ndarray,
     radii: np.ndarray,
     ax: plt.Axes,
+    title: Optional[str] = None,
 ) -> None:
     ax.scatter(points[:, 0], points[:, 1], c=clusters, s=50, cmap="Set2")
 
@@ -36,6 +37,8 @@ def plot_2d_ax(
                         linestyle="--",
                     )
                 )
+    if title is not None:
+        ax.set_title(title)
     ax.set_xlabel("Feature 1")
     ax.set_ylabel("Feature 2")
 
@@ -47,6 +50,7 @@ def plot_result(
     clusters: Optional[Sequence[int]] = None,
     centers: Optional[Sequence[Sequence[float]]] = None,
     radii: Optional[Sequence[float]] = None,
+    title: Optional[str] = None,
     output_path: Optional[Path] = None,
     show: bool = True,
 ) -> None:
@@ -55,7 +59,7 @@ def plot_result(
 
     fig, ax = plt.subplots(figsize=(10, 10))
 
-    plot_2d_ax(np.array(points), clusters, centers, radii, ax)
+    plot_2d_ax(np.array(points), clusters, centers, radii, ax, title)
 
     if output_path is not None:
         plt.savefig(
@@ -71,26 +75,42 @@ def plot_result(
 
 
 def plot_multiple_results(
-    point_sets: Sequence[Sequence[Sequence[float]]],
-    clusterings: Sequence[Sequence[int]],
-    centers: Sequence[Sequence[Sequence[float]]],
-    radii: Sequence[Sequence[float]],
+    points: Sequence[Sequence[float]],
+    clusterings: Optional[Sequence[Optional[Sequence[int]]]] = None,
+    centers: Optional[Sequence[Optional[Sequence[Sequence[float]]]]] = None,
+    radii: Optional[Sequence[Optional[Sequence[float]]]] = None,
+    titles: Optional[Optional[Sequence[str]]] = None,
     output_path: Optional[Path] = None,
     show: bool = True,
 ) -> None:
-    if len(point_sets[0][0]) > 2:
+    if len(points[0]) > 2:
         raise ValueError("Only 2D data is supported for plotting.")
 
-    fig, axs = plt.subplots(
-        1,
-        len(point_sets),
-        figsize=(10 * len(point_sets), 10),
-    )
+    if clusterings is not None:
+        ll = len(clusterings)
+    elif centers is not None:
+        ll = len(centers)
+    elif radii is not None:
+        ll = len(radii)
+    else:
+        ll = 1
 
-    for points, clusters, center, radius, ax in zip(
-        point_sets, clusterings, centers, radii, axs
-    ):
-        plot_2d_ax(np.array(points), clusters, center, radius, ax)
+    fig, axs = plt.subplots(1, ll, figsize=(10 * ll, 10))
+
+    if clusterings is None:
+        clusterings = [None] * ll
+
+    if centers is None:
+        centers = [None] * ll
+
+    if radii is None:
+        radii = [None] * ll
+
+    if titles is None:
+        titles = [f"Plot {i}" for i in range(ll)]
+
+    for params in zip(clusterings, centers, radii, axs, titles):
+        plot_2d_ax(np.array(points), *params)
 
     if output_path is not None:
         plt.savefig(
