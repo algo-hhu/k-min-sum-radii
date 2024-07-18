@@ -1,4 +1,4 @@
-#include "header/point.h"
+#include "../header/point.h"
 
 Point::Point(std::vector<double> coords) : coordinates(coords) {}
 Point::Point(int dimension) : coordinates(dimension, 0.0) {}

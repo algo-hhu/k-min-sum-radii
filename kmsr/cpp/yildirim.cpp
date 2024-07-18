@@ -1,7 +1,7 @@
-#include "header/yildirim.h"
-
 #include <cmath>
 #include <vector>
+
+#include "../header/yildirim.h"
 
 using namespace std;
 
@@ -71,7 +71,7 @@ Ball findMEB(const vector<Point> &points, double epsilon) {
 
     // Aktualisierung der Gewichtungen u
     for (size_t i = 0; i < points.size(); i++) {
-      u[i] = (1 - lambda) * u[i] + (i == kappa ? lambda : 0);
+      u[i] = (1 - lambda) * u[i] + (static_cast<int>(i) == kappa ? lambda : 0);
     }
 
     // Aktualisierung des Zentrums c

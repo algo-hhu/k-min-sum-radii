@@ -4,7 +4,7 @@ version = "0.1.0"
 description = ""
 authors = ["Niklas Lenssen <niklas.lenssen@hhu.de>", "Annika Hennes <annika.hennes@hhu.de>", "Melanie Schmidt <mschmidt@hhu.de>", "Giulia Baldini <giulia.baldini@hhu.de>"]
 readme = "README.md"
-license = "GPLv3"
+license = "LICENSE"
 packages = [
     { include = "kmsr" },
 ]
@@ -25,7 +25,7 @@ script = "build_extension.py"
 generate-setup-file = true
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core", "setuptools"]
 build-backend = "poetry.core.masonry.api"
 
 [virtualenvs]

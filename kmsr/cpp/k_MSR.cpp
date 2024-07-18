@@ -1,12 +1,11 @@
-#include "header/k_MSR.h"
-
 #include <omp.h>
 
 #include <random>
 
-#include "header/gonzales.h"
-#include "header/welzl.h"
-#include "header/yildirim.h"
+#include "../header/k_MSR.h"
+#include "../header/gonzales.h"
+#include "../header/welzl.h"
+#include "../header/yildirim.h"
 
 using namespace std;
 
@@ -88,7 +87,7 @@ vector<vector<double>> getRadii(double rmax, int k, double epsilon) {
     result.push_back(current);
 
     int next = k - 2;
-    while (next >= 0 && ++indices[next] == set.size()) {
+    while (next >= 0 && ++indices[next] == static_cast<int>(set.size())) {
       indices[next] = 0;
       next--;
     }
@@ -128,7 +127,7 @@ vector<vector<double>> getRandomRadii(double rmax, int k, double epsilon,
 
     // Füllt den Vektor mit zufälligen Werten, die durch den Zufallsgenerator
     // bestimmt werden.
-    for (int j = 1; j < currentVector.size(); j++) {
+    for (size_t j = 1; j < currentVector.size(); j++) {
       currentVector[j] = set[distrib(gen)];
     }
     result[i] = currentVector;
@@ -175,7 +174,7 @@ vector<Ball> selection(const vector<Point> &points, int k, const vector<int> &u,
   vector<vector<Point>> Si(k);
   double lambda = 1 + epsilon + 2 * sqrt(epsilon);
 
-  for (int i = 0; i < u.size(); i++) {
+  for (size_t i = 0; i < u.size(); i++) {
     bool addedPoint = false;
 
     // Füge den ersten ersten Punkt in 'points', der nicht von 'X' oder 'R'
@@ -229,8 +228,8 @@ vector<Cluster> clustering(const vector<Point> &points, int k, double epsilon,
     shared(bestCluster, bestCost)
   // Berechne für alle Kombinationen von 'radii' und 'u' die Cluster mit den
   // geringsten Kosten.
-  for (int i = 0; i < radii.size(); i++) {
-    for (int j = 0; j < u.size(); j++) {
+  for (size_t i = 0; i < radii.size(); i++) {
+    for (size_t j = 0; j < u.size(); j++) {
       vector<double> r = radii[i];
       vector<int> ui = u[j];
 

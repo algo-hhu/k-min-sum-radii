@@ -3,12 +3,12 @@
 #include <iostream>
 #include <random>
 
-#include "header/ball.h"
-#include "header/cluster.h"
-#include "header/k_MSR.h"
-#include "header/point.h"
-#include "header/welzl.h"
-#include "header/yildirim.h"
+#include "../header/ball.h"
+#include "../header/cluster.h"
+#include "../header/k_MSR.h"
+#include "../header/point.h"
+#include "../header/welzl.h"
+#include "../header/yildirim.h"
 
 using namespace std;
 
@@ -69,14 +69,14 @@ vector<Cluster> mergeCluster(vector<Cluster> &clusters) {
     vector<Cluster> mergedClusters;
     vector<bool> merged(clusters.size(), false);
 
-    for (int i = 0; i < clusters.size(); i++) {
+    for (size_t i = 0; i < clusters.size(); i++) {
       if (merged[i]) {
         continue;  // Überspringe bereits gemergte Cluster
       }
       Cluster currentCluster = clusters[i];
       merged[i] = true;
 
-      for (int j = i + 1; j < clusters.size(); j++) {
+      for (size_t j = i + 1; j < clusters.size(); j++) {
         if (merged[j]) {
           continue;  // Überspringe bereits gemergte Cluster
         }
@@ -244,7 +244,7 @@ vector<Cluster> heuristik(vector<Point> &points, int k) {
         double radius = distances[i][j];
 
         // Finde k Zentren
-        while (centers.size() != k) {
+        while (static_cast<int>(centers.size()) != k) {
           int nextCenter = -1;
           double maxDist = -1.0;
 

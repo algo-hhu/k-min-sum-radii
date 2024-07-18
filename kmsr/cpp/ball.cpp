@@ -1,4 +1,4 @@
-#include "header/ball.h"
+#include "../header/ball.h"
 
 Ball::Ball(int d) : center(Point(d)), radius(0.0) {}
 Ball::Ball(const Point& center, double radius)

@@ -1,8 +1,8 @@
 #include <cmath>
 #include <vector>
 
-#include "header/ball.h"
-#include "header/miniball.h"
+#include "../header/ball.h"
+#include "../header/miniball.h"
 
 using namespace std;
 
