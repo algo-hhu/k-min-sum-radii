@@ -10,34 +10,34 @@ double gonzalesrmax(const vector<Point> &points, int k)
   srand(1234);
   vector<Point> centers;
 
-  // Wähle den ersten Punkt zufällig aus den Eingabepunkten
+  // Choose the first point randomly from the input points
   centers.push_back(points[rand() % points.size()]);
 
   vector<double> distances(points.size());
 
-  // Berechne den maximalen Abstand für die initiale Zuordnung
+  // Calculate the maximum distance for the initial assignment
   for (size_t i = 0; i < points.size(); i++)
   {
     distances[i] = Point::distance(points[i], centers[0]);
   }
 
-  // Iteriere, um die restlichen k - 1 Zentren zu finden
+  // Iterate to find the remaining k - 1 centers
   while (static_cast<int>(centers.size()) < k)
   {
-    // Wähle das nächste Zentrum basierend auf dem größten Abstand
+    // Choose the next center based on the maximum distance
     int nextCenterIndex = distance(
         distances.begin(), max_element(distances.begin(), distances.end()));
     Point nextCenter = points[nextCenterIndex];
     centers.push_back(nextCenter);
 
-    // Aktualisiere die Abstände für jeden Punkt zu seinem nächsten Zentrum
+    // Update the distances for each point to its nearest center
     for (size_t i = 0; i < points.size(); i++)
     {
       distances[i] = min(distances[i], Point::distance(points[i], nextCenter));
     }
   }
 
-  // Berechne den maximalen Abstand der Punkte zu ihren Zentren
+  // Calculate the maximum distance of the points to their centers
   double maxDistance = 0.0;
   for (size_t i = 0; i < points.size(); i++)
   {
