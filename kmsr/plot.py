@@ -8,9 +8,9 @@ from matplotlib.patches import Circle
 
 def plot_2d_ax(
     points: np.ndarray,
-    clusters: np.ndarray,
-    centers: np.ndarray,
-    radii: np.ndarray,
+    clusters: Optional[np.ndarray],
+    centers: Optional[np.ndarray],
+    radii: Optional[np.ndarray],
     ax: plt.Axes,
     title: Optional[str] = None,
 ) -> None:
