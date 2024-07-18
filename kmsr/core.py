@@ -57,108 +57,6 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
 
         return self._fit(X)
 
-    def _fit_schmidt(
-        self,
-        X: Any,
-        n: int,
-        centers: Any,
-        labels: Any,
-    ) -> int:
-        c_n = ctypes.c_int(n)
-        c_features = ctypes.c_int(self.n_features_in_)
-        c_clusters = ctypes.c_int(self.n_clusters)
-        c_epsilon = ctypes.c_double(self.epsilon)
-        c_u = ctypes.c_int(self.u)
-        c_num_radii = ctypes.c_int(self.num_radii)
-        found_clusters = ctypes.c_int()
-
-        _DLL.schmidt_wrapper(
-            X,
-            c_n,
-            c_features,
-            c_clusters,
-            c_epsilon,
-            c_u,
-            c_num_radii,
-            ctypes.byref(found_clusters),
-            labels,
-            centers,
-        )
-
-        return found_clusters.value
-
-    def _fit_heuristic(
-        self,
-        X: Any,
-        n: int,
-        centers: Any,
-        labels: Any,
-    ) -> int:
-        c_n = ctypes.c_int(n)
-        c_features = ctypes.c_int(self.n_features_in_)
-        c_clusters = ctypes.c_int(self.n_clusters)
-        found_clusters = ctypes.c_int()
-
-        _DLL.heuristic_wrapper(
-            X,
-            c_n,
-            c_features,
-            c_clusters,
-            ctypes.byref(found_clusters),
-            labels,
-            centers,
-        )
-
-        return found_clusters.value
-
-    def _fit_gonzales(
-        self,
-        X: Any,
-        n: int,
-        centers: Any,
-        labels: Any,
-    ) -> int:
-        c_n = ctypes.c_int(n)
-        c_features = ctypes.c_int(self.n_features_in_)
-        c_clusters = ctypes.c_int(self.n_clusters)
-        found_clusters = ctypes.c_int()
-
-        _DLL.gonzales_wrapper(
-            X,
-            c_n,
-            c_features,
-            c_clusters,
-            ctypes.byref(found_clusters),
-            labels,
-            centers,
-        )
-
-        return found_clusters.value
-
-    def _fit_kmeans(
-        self,
-        X: Any,
-        n: int,
-        centers: Any,
-        labels: Any,
-    ) -> int:
-        c_n = ctypes.c_int(n)
-        c_features = ctypes.c_int(self.n_features_in_)
-        c_clusters = ctypes.c_int(self.n_clusters)
-        found_clusters = ctypes.c_int()
-
-        _DLL.kmeans_wrapper(
-            X,
-            c_n,
-            c_features,
-            c_clusters,
-            ctypes.byref(found_clusters),
-            labels,
-            centers,
-        )
-
-        return found_clusters.value
-
     def _fit(
         self,
         X: Sequence[Sequence[float]],
@@ -174,27 +72,60 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
             accept_large_sparse=False,
             copy=False,
         )
+
         n_samples, self.n_features_in_ = _X.shape
 
         c_array = _X.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+
+        c_n = ctypes.c_int(n_samples)
+        c_features = ctypes.c_int(self.n_features_in_)
+        c_clusters = ctypes.c_int(self.n_clusters)
+        found_clusters = ctypes.c_int()
+
         c_labels = (ctypes.c_int * n_samples)()
         c_centers = (ctypes.c_double * self.n_features_in_ * self.n_clusters)()
 
         if self.algorithm == "schmidt":
-            real_clusters = self._fit_schmidt(c_array, n_samples, c_centers, c_labels)
-        elif self.algorithm == "heuristic":
-            real_clusters = self._fit_heuristic(c_array, n_samples, c_centers, c_labels)
-        elif self.algorithm == "gonzales":
-            real_clusters = self._fit_gonzales(c_array, n_samples, c_centers, c_labels)
-        elif self.algorithm == "kmeans":
-            real_clusters = self._fit_kmeans(c_array, n_samples, c_centers, c_labels)
+            c_epsilon = ctypes.c_double(self.epsilon)
+            c_u = ctypes.c_int(self.u)
+            c_num_radii = ctypes.c_int(self.num_radii)
+
+            _DLL.schmidt_wrapper(
+                c_array,
+                c_n,
+                c_features,
+                c_clusters,
+                c_epsilon,
+                c_u,
+                c_num_radii,
+                ctypes.byref(found_clusters),
+                c_labels,
+                c_centers,
+            )
         else:
-            raise ValueError(f"Invalid algorithm: {self.algorithm}")
+            if self.algorithm == "heuristic":
+                wrapper_function = _DLL.heuristic_wrapper
+            elif self.algorithm == "gonzales":
+                wrapper_function = _DLL.gonzales_wrapper
+            elif self.algorithm == "kmeans":
+                wrapper_function = _DLL.kmeans_wrapper
+            else:
+                raise ValueError(f"Invalid algorithm: {self.algorithm}")
+            wrapper_function(
+                c_array,
+                c_n,
+                c_features,
+                c_clusters,
+                ctypes.byref(found_clusters),
+                c_labels,
+                c_centers,
+            )
+
+        self.real_clusters_ = found_clusters.value
 
         self.cluster_centers_ = np.ctypeslib.as_array(
             c_centers, shape=(self.n_clusters, self.n_features_in_)
         )
-        self.real_clusters_ = real_clusters
         self.labels_ = np.ctypeslib.as_array(c_labels)
 
         return self

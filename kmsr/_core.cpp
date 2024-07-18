@@ -27,12 +27,13 @@ void exportCluster(vector<Cluster> clusters, int *numClusters, int *labels, doub
 {
   *numClusters = 0;
 
-  for (int i = 0; i < *numClusters; i++)
+  for (int i = 0; i < clusters.size(); i++)
   {
     for (size_t j = 0; j < clusters[i].getPoints().size(); j++)
     {
       labels[clusters[i].getPoints()[j].getPosition()] = i;
     }
+
     if (clusters[i].getPoints().size() > 0)
     {
       *numClusters++;
