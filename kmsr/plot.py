@@ -25,8 +25,8 @@ def plot_2d_ax(
             ax.plot(x, y, "+", color="black")
 
             if clusters is not None:
-                clusters = np.array(clusters)
-                points_in_cluster = points[clusters == i]
+                _clusters = np.array(clusters)
+                points_in_cluster = points[_clusters == i]
                 furthest_point = points_in_cluster[
                     np.argmax(np.linalg.norm(points_in_cluster - centers[i], axis=1))
                 ]
