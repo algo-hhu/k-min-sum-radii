@@ -53,6 +53,7 @@ def plot_result(
     title: Optional[str] = None,
     output_path: Optional[Path] = None,
     show: bool = True,
+    transparent: bool = True,
 ) -> None:
     if len(points[0]) > 2:
         raise ValueError("Only 2D data is supported for plotting.")
@@ -66,7 +67,7 @@ def plot_result(
             output_path,
             dpi=300,
             bbox_inches="tight",
-            transparent=True,
+            transparent=transparent,
         )
     if show:
         plt.show()
@@ -82,6 +83,7 @@ def plot_multiple_results(
     titles: Optional[Optional[Sequence[str]]] = None,
     output_path: Optional[Path] = None,
     show: bool = True,
+    transparent: bool = True,
 ) -> None:
     if len(points[0]) > 2:
         raise ValueError("Only 2D data is supported for plotting.")
@@ -117,7 +119,7 @@ def plot_multiple_results(
             output_path,
             dpi=300,
             bbox_inches="tight",
-            transparent=True,
+            transparent=transparent,
         )
     if show:
         plt.show()
