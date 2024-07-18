@@ -12,6 +12,7 @@ extension = Extension(
         "kmsr/cpp/cluster.cpp",
         "kmsr/cpp/gonzales.cpp",
         "kmsr/cpp/heuristic.cpp",
+        "kmsr/cpp/util.cpp",
         "kmsr/cpp/k_MSR.cpp",
         "kmsr/cpp/point.cpp",
         "kmsr/cpp/welzl.cpp",
