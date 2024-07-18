@@ -1,7 +1,11 @@
+#include <iostream>
+#include <sstream>
+
 #include "../header/point.h"
 
 Point::Point(std::vector<double> coords) : coordinates(coords) {}
 Point::Point(int dimension) : coordinates(dimension, 0.0) {}
+Point::Point(std::vector<double> coords, int pos) : coordinates(coords), position(pos) {}
 
 double Point::distanceTo(const Point& other) const {
   if (coordinates.size() != other.coordinates.size()) {
@@ -54,4 +58,18 @@ Point Point::operator*(double scalar) const {
     result_coords[i] = coordinates[i] * scalar;
   }
   return Point(result_coords);
+}
+
+std::string Point::print() const {
+  std::stringstream tmp;
+  tmp << "[" << position << "] ";
+  tmp << "(";
+  for (size_t i = 0; i < coordinates.size(); i++) {
+    tmp << coordinates[i];
+    if (i < coordinates.size() - 1) {
+      tmp << ", ";
+    }
+  }
+  tmp << ")";
+  return tmp.str();
 }
