@@ -4,7 +4,8 @@ from typing import Any
 
 import numpy as np
 
-from kmsr import KMSR, generate_clusters
+from kmsr import KMSR
+from kmsr.generate_points import generate_clusters
 
 
 def check_cost(inertia: float, radii: np.ndarray) -> Any:
