@@ -19,16 +19,18 @@ Although the last two algorithms are not specifically designed for the k-Min-Sum
 
 ## Installation
 
-We **highly recommend** to install OpenMP. Parts of the code are parallelized and will be much faster. However, the code should run even without it. If that is not the case, open an issue!
+We **highly recommend** to install OpenMP. Parts of the code are parallelized and will be much faster. However, on Windows and MacOS the code also works without OpenMP. Nonetheless, the code was written for Linux and will achieve the best performance there.
 
 On Linux, you can use the following command:
 ```bash
 sudo apt-get install libomp-dev
 ```
+
 On MacOS, you can use the following command:
 ```bash
- brew install clang-omp
+ brew install llvm libomp
 ```
+However, it might be that MacOS does not find the installed library. In [`build_extension.py`](./build_extension.py), the paths are set manually. If it does not work for you, please clone the repository and run `poetry build`. You you see a message in red if your OpenMP is not found.
 
 Then, you can install the package via pip:
 ```bash

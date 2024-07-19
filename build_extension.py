@@ -1,7 +1,8 @@
 import os
+import platform
 import subprocess
 import warnings
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from setuptools import Extension
 from setuptools.command.build_ext import build_ext
@@ -25,7 +26,10 @@ extension = Extension(
 )
 
 
-def check_openmp_support() -> bool:
+def check_openmp_support() -> List[str]:
+    if platform.system() == "Windows":
+        return []
+
     openmp_test_code = """
     #include <omp.h>
     #include <stdio.h>
@@ -44,23 +48,33 @@ def check_openmp_support() -> bool:
         f.write(openmp_test_code)
 
     try:
+        if platform.system() == "Darwin":
+            cmd_params = [
+                "-Xclang",
+                "-fopenmp",
+                "-I/usr/local/opt/libomp/include",
+                "-L/usr/local/opt/libomp/lib",
+                "-lomp",
+            ]
+        else:
+            cmd_params = ["-fopenmp"]
         # Try to compile the code with OpenMP support
         result = subprocess.run(
-            ["gcc", "-fopenmp", "test_openmp.c", "-o", "test_openmp"],
+            ["gcc"] + cmd_params + ["test_openmp.c", "-o", "test_openmp"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
         if result.returncode != 0:
-            return False
+            return []
 
         # Run the compiled program
         result = subprocess.run(
             ["./test_openmp"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
         if result.returncode == 0:
-            return True
+            return cmd_params
         else:
-            return False
+            return []
     finally:
         os.remove("test_openmp.c")
         if os.path.exists("test_openmp"):
@@ -71,24 +85,23 @@ class BuildExt(build_ext):
     """A custom build extension for adding -stdlib arguments for clang++."""
 
     def build_extensions(self) -> None:
-        if os.name == "nt":
-            support = True
-        else:
-            support = check_openmp_support()
+        openmp_params = check_openmp_support()
 
         # '-std=c++11' is added to `extra_compile_args` so the code can compile
         # with clang++. This works across compilers (ignored by MSVC).
         for extension in self.extensions:
             extension.extra_compile_args.append("-std=c++11")
-            if support:
-                extension.extra_compile_args.append("-fopenmp")
-                extension.extra_link_args.append("-lgomp")
-            else:
+            if len(openmp_params) == 0:
                 warnings.warn(
                     "\x1b[31;20m OpenMP is not installed on this system. "
                     "Please install it to have all the benefits from the program.\x1b[0m"
                 )
+            else:
+                for param in openmp_params:
+                    extension.extra_compile_args.append(param)
 
+                if platform.system() == "Linux":
+                    extension.extra_link_args.append("-lgomp")
         try:
             build_ext.build_extensions(self)
         except CompileError:
