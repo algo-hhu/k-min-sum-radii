@@ -30,7 +30,7 @@ sudo apt-get install libomp-dev libgomp1
 # Debian
 sudo apt-get install gcc libomp-dev libomp5 libgomp1
 # ArchLinux
-sudo pacnam -S openmp
+sudo pacman -S openmp
 ln -s libomp.so libomp.so.5
 ```
 We have tested this on docker, so it might be a little different on your system.
