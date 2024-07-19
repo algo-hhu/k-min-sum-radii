@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, List, Optional, Sequence
+from typing import Any, List, Optional, Sequence, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,8 +15,9 @@ def plot_2d_ax(
     radii: Optional[Sequence[float]] = None,
     title: Optional[str] = None,
     edge_color: str = "black",
+    cmap: str = "plasma",
 ) -> None:
-    ax.scatter(points[:, 0], points[:, 1], c=clusters, s=20, cmap="Set2")
+    ax.scatter(points[:, 0], points[:, 1], c=clusters, s=20, cmap=cmap)
     _centers = np.array(centers)
     ax.scatter(_centers[:, 0], _centers[:, 1], c="red", s=50, alpha=0.5, marker="X")
 
@@ -62,9 +63,10 @@ def plot_3d_ax(
     radii: Optional[Sequence[float]] = None,
     title: Optional[str] = None,
     edge_color: str = "black",
+    cmap: str = "plasma",
 ) -> None:
     ax.scatter(  # type: ignore
-        points[:, 0], points[:, 1], points[:, 2], c=clusters, s=20, cmap="Set2"
+        points[:, 0], points[:, 1], points[:, 2], c=clusters, s=20, cmap=cmap
     )
     _centers = np.array(centers)
     ax.scatter(  # type: ignore
@@ -135,15 +137,18 @@ def plot_result(
     centers: Optional[Sequence[Sequence[float]]] = None,
     radii: Optional[Sequence[float]] = None,
     title: Optional[str] = None,
+    *,
+    cmap: str = "plasma",
     output_path: Optional[Path] = None,
-    show: bool = True,
     transparent: bool = True,
-) -> None:
+    show: bool = True,
+    close: bool = True,
+) -> Tuple[plt.Figure, plt.Axes]:
     fig, ax = plt.subplots(
         figsize=(10, 10), subplot_kw=dict(projection=get_projection(len(points[0])))
     )
 
-    plot_ax(np.array(points), ax, clusters, centers, radii, title)
+    plot_ax(np.array(points), ax, clusters, centers, radii, title, cmap=cmap)
 
     if output_path is not None:
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
@@ -156,7 +161,10 @@ def plot_result(
     if show:
         plt.show()
 
-    plt.close()
+    if close:
+        plt.close()
+
+    return fig, ax
 
 
 def plot_multiple_results(
@@ -165,10 +173,13 @@ def plot_multiple_results(
     centers: Optional[Sequence[Optional[Sequence[Sequence[float]]]]] = None,
     radii: Optional[Sequence[Optional[Sequence[float]]]] = None,
     title: Optional[Optional[Sequence[str]]] = None,
+    *,
+    cmap: str = "plasma",
     output_path: Optional[Path] = None,
-    show: bool = True,
     transparent: bool = True,
-) -> None:
+    show: bool = True,
+    close: bool = True,
+) -> Tuple[plt.Figure, plt.Axes]:
     proj = get_projection(len(points[0]))
 
     if clusters is not None:
@@ -204,7 +215,7 @@ def plot_multiple_results(
         title = [f"Plot {i}" for i in range(ll)]
 
     for params in zip(axs, clusters, centers, radii, title):
-        plot_ax(np.array(points), *params)
+        plot_ax(np.array(points), *params, cmap=cmap)
 
     if output_path is not None:
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
@@ -214,7 +225,11 @@ def plot_multiple_results(
             bbox_inches="tight",
             transparent=transparent,
         )
+
     if show:
         plt.show()
 
-    plt.close()
+    if close:
+        plt.close()
+
+    return fig, axs
