@@ -67,7 +67,7 @@ vector<Cluster> kMeansPlusPlus(vector<Point> &points, int k, int seed)
   {
     vector<double> dist(n, numeric_limits<double>::max());
 
-    for (size_t j = 0; j < n; j++)
+    for (int j = 0; j < n; j++)
     {
       for (const Point &center : centers)
       {
@@ -78,7 +78,7 @@ vector<Cluster> kMeansPlusPlus(vector<Point> &points, int k, int seed)
     // Calculate the probability distribution for selecting the next center
     vector<double> distSquared(n);
     double sumDist = 0.0;
-    for (size_t j = 0; j < n; j++)
+    for (int j = 0; j < n; j++)
     {
       distSquared[j] = dist[j] * dist[j];
       sumDist += distSquared[j];
@@ -88,7 +88,7 @@ vector<Cluster> kMeansPlusPlus(vector<Point> &points, int k, int seed)
     double r = disReal(gen);
     double cumulativeDist = 0.0;
 
-    for (size_t j = 0; j < n; j++)
+    for (int j = 0; j < n; j++)
     {
       cumulativeDist += distSquared[j];
       if (cumulativeDist >= r)

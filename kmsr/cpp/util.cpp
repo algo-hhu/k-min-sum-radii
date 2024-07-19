@@ -31,7 +31,7 @@ bool clustersOverlap(const Cluster &c1, const Cluster &c2)
 std::vector<Cluster> assignPointsToCluster(const std::vector<Point> &points,
                                       const std::vector<Point> &centers, int k)
 {
-  int n = points.size();
+  int n = static_cast<int>(points.size());
   std::vector<Cluster> clusters(k);
 
   // Create clusters based on the centers
@@ -59,7 +59,7 @@ std::vector<Cluster> assignPointsToCluster(const std::vector<Point> &points,
 // Computes the centroid of the cluster
 Point computeCentroid(const std::vector<Point> &points)
 {
-  int dimension = points[0].getCoordinates().size();
+  int dimension = static_cast<int>(points[0].getCoordinates().size());
   std::vector<double> centroidCoords(dimension, 0.0);
 
   // Sum of the coordinates of all points in the cluster

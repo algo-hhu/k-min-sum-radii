@@ -18,7 +18,7 @@ struct PointCoordAccessor
 
 Ball findMinEnclosingBall(const vector<Point> &points)
 {
-  int dimension = points.front().getCoordinates().size();
+  int dimension = static_cast<int>(points.front().getCoordinates().size());
 
   Miniball::Miniball<PointCoordAccessor> mb(dimension, points.begin(),
                                             points.end());
