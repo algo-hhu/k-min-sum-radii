@@ -17,7 +17,7 @@ scikit-learn = "^1.5.1"
 [tool.poetry.group.dev.dependencies]
 black = "^24.4.2"
 pre-commit = "^2.14.0"
-flake8 = "^3.9.2"
+flake8 = "^7.0.0"
 mypy = "^1.10.0"
 matplotlib = "^3.9.1"
 pandas = "^2.2.2"
