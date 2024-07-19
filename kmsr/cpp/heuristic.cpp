@@ -18,7 +18,7 @@ using namespace std;
 vector<Cluster> gonzales(vector<Point> &points, int k, int seed)
 {
   srand(seed);
-  int n = points.size();
+  size_t n = points.size();
   vector<Point> centers;
   centers.push_back(points[rand() % n]);
 
@@ -29,7 +29,7 @@ vector<Cluster> gonzales(vector<Point> &points, int k, int seed)
     double maxDist = -1.0;
 
     // Find the point that is farthest from its nearest center
-    for (int j = 0; j < n; j++)
+    for (size_t j = 0; j < n; j++)
     {
       double dist = numeric_limits<double>::max();
       for (Point center : centers)
@@ -54,7 +54,7 @@ vector<Cluster> gonzales(vector<Point> &points, int k, int seed)
 
 vector<Cluster> kMeansPlusPlus(vector<Point> &points, int k, int seed)
 {
-  int n = points.size();
+  size_t n = points.size();
   vector<Point> centers;
   mt19937 gen(seed);
   uniform_int_distribution<> dis(0, n - 1);
@@ -67,7 +67,7 @@ vector<Cluster> kMeansPlusPlus(vector<Point> &points, int k, int seed)
   {
     vector<double> dist(n, numeric_limits<double>::max());
 
-    for (int j = 0; j < n; j++)
+    for (size_t j = 0; j < n; j++)
     {
       for (const Point &center : centers)
       {
@@ -78,7 +78,7 @@ vector<Cluster> kMeansPlusPlus(vector<Point> &points, int k, int seed)
     // Calculate the probability distribution for selecting the next center
     vector<double> distSquared(n);
     double sumDist = 0.0;
-    for (int j = 0; j < n; j++)
+    for (size_t j = 0; j < n; j++)
     {
       distSquared[j] = dist[j] * dist[j];
       sumDist += distSquared[j];
@@ -88,7 +88,7 @@ vector<Cluster> kMeansPlusPlus(vector<Point> &points, int k, int seed)
     double r = disReal(gen);
     double cumulativeDist = 0.0;
 
-    for (int j = 0; j < n; j++)
+    for (size_t j = 0; j < n; j++)
     {
       cumulativeDist += distSquared[j];
       if (cumulativeDist >= r)
@@ -130,7 +130,7 @@ vector<Cluster> kMeansPlusPlus(vector<Point> &points, int k, int seed)
 
 vector<Cluster> heuristik(vector<Point> &points, int k)
 {
-  int n = points.size();
+  size_t n = points.size();
   vector<Cluster> bestCluster;
   bestCluster.push_back(
       Cluster(points)); // Initialize with all points in one cluster
@@ -138,9 +138,9 @@ vector<Cluster> heuristik(vector<Point> &points, int k)
 
 // Calculation of distances between all points
 #pragma omp parallel for collapse(2)
-  for (int i = 0; i < n; i++)
+  for (size_t i = 0; i < n; i++)
   {
-    for (int j = 0; j < n; j++)
+    for (size_t j = 0; j < n; j++)
     {
       distances[i][j] = Point::distance(points[i], points[j]);
     }
@@ -154,9 +154,9 @@ vector<Cluster> heuristik(vector<Point> &points, int k)
         cost(localBestCluster); // Cost of the local best clusters
 
 #pragma omp for
-    for (int i = 0; i < n; i++)
+    for (size_t i = 0; i < n; i++)
     {
-      for (int j = 0; j < n; j++)
+      for (size_t j = 0; j < n; j++)
       {
         vector<Point> centers;
         Point largestCenter = points[i];
@@ -169,7 +169,7 @@ vector<Cluster> heuristik(vector<Point> &points, int k)
           int nextCenter = -1;
           double maxDist = -1.0;
 
-          for (int h = 0; h < n; h++)
+          for (size_t h = 0; h < n; h++)
           {
             double dist = numeric_limits<double>::max();
             for (const Point &center : centers)
