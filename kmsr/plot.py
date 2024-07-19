@@ -146,6 +146,7 @@ def plot_result(
     plot_ax(np.array(points), ax, clusters, centers, radii, title)
 
     if output_path is not None:
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
         plt.savefig(
             output_path,
             dpi=300,
@@ -206,6 +207,7 @@ def plot_multiple_results(
         plot_ax(np.array(points), *params)
 
     if output_path is not None:
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
         plt.savefig(
             output_path,
             dpi=300,
