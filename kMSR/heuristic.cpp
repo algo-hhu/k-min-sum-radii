@@ -7,118 +7,14 @@
 #include "header/cluster.h"
 #include "header/k_MSR.h"
 #include "header/point.h"
+#include "header/util.h"
 #include "header/welzl.h"
 #include "header/yildirim.h"
 
 using namespace std;
 
-// Weist jedem Punkt im Vektor 'points' das nächstgelegene Zentrum im Vektor
-// 'centers' zu
-vector<Cluster> assignPointsToCluster(const vector<Point> &points,
-                                      const vector<Point> &centers, int k) {
-  int n = points.size();
-  vector<Cluster> clusters(k);
-
-  // Erstelle Cluster basierend auf den Zentren
-  for (int i = 0; i < n; i++) {
-    int closestCenter = -1;
-    double minDist = numeric_limits<double>::max();
-
-    // Finde das nächstgelegene Zentrum für jeden Punkt
-    for (int j = 0; j < k; j++) {
-      double dist = points[i].distanceTo(centers[j]);
-      if (dist < minDist) {
-        minDist = dist;
-        closestCenter = j;
-      }
-    }
-    // Füge den aktuellen Punkt zu seinem nächsten Cluster hinzu
-    clusters[closestCenter].addPoint(points[i]);
-  }
-  return clusters;
-}
-
-// Überprüft, ob zwei Cluster sich überlappen oder berühren
-bool clustersOverlap(const Cluster &c1, const Cluster &c2) {
-  // Berechne die MEBs
-  vector<Point> p1 = c1.getPoints();
-  vector<Point> p2 = c2.getPoints();
-
-  if (p1.size() == 0 || p2.size() == 0) return false;
-  Ball b1 = findMinEnclosingBall(p1);
-  Ball b2 = findMinEnclosingBall(p2);
-
-  // Berechne die euklidische Distanz zwischen den Zentren der beiden Bälle
-  double distance = Point::distance(b1.getCenter(), b2.getCenter());
-
-  // Berechne die Summe der Radien der beiden Bälle
-  double radiusSum = b1.getRadius() + b2.getRadius();
-
-  // Überprüfe, ob die Distanz zwischen den Zentren kleiner oder gleich der
-  // Summe der Radien ist
-  return distance <= radiusSum;
-}
-
-// Merged überlappende oder berührende Cluster
-vector<Cluster> mergeCluster(vector<Cluster> &clusters) {
-  bool changed;
-
-  // Wiederhole den Merge-Vorgang, bis keine Cluster mehr gemerged werden
-  do {
-    changed = false;
-    vector<Cluster> mergedClusters;
-    vector<bool> merged(clusters.size(), false);
-
-    for (int i = 0; i < clusters.size(); i++) {
-      if (merged[i]) {
-        continue;  // Überspringe bereits gemergte Cluster
-      }
-      Cluster currentCluster = clusters[i];
-      merged[i] = true;
-
-      for (int j = i + 1; j < clusters.size(); j++) {
-        if (merged[j]) {
-          continue;  // Überspringe bereits gemergte Cluster
-        }
-        if (clustersOverlap(currentCluster, clusters[j])) {
-          currentCluster.merge(clusters[j]);
-          merged[j] = true;
-          changed = true;  // Es gab eine Änderung
-        }
-      }
-      mergedClusters.push_back(currentCluster);  // Füge das gemergte Cluster zu
-                                                 // den gemergten Clustern hinzu
-    }
-
-    clusters = mergedClusters;  // Aktualisiere die Cluster-Liste
-
-  } while (changed);
-
-  return clusters;
-}
-
-// Berechnet den Schwerpunkt (Centroid) des Clusters
-Point computeCentroid(const vector<Point> &points) {
-  int dimension = points[0].getCoordinates().size();
-  vector<double> centroidCoords(dimension, 0.0);
-
-  // Summe der Koordinaten aller Punkte im Cluster
-  for (const Point &p : points) {
-    for (int i = 0; i < dimension; i++) {
-      centroidCoords[i] += p.getCoordinates()[i];
-    }
-  }
-
-  // Mittelwert der Koordinaten berechnen
-  for (int i = 0; i < dimension; i++) {
-    centroidCoords[i] /= points.size();
-  }
-
-  return Point(centroidCoords);
-}
-
-vector<Cluster> gonzales(vector<Point> &points, int k) {
-  srand(1234);
+vector<Cluster> gonzales(vector<Point> &points, int k, int seed) {
+  srand(seed);
   int n = points.size();
   vector<Point> centers;
   centers.push_back(points[rand() % n]);
@@ -150,10 +46,10 @@ vector<Cluster> gonzales(vector<Point> &points, int k) {
   return mergeCluster(clusters);
 }
 
-vector<Cluster> kMeansPlusPlus(vector<Point> &points, int k) {
+vector<Cluster> kMeansPlusPlus(vector<Point> &points, int k, int seed) {
   int n = points.size();
   vector<Point> centers;
-  mt19937 gen(1234);
+  mt19937 gen(seed);
   uniform_int_distribution<> dis(0, n - 1);
 
   // Wähle das erste Zentrum zufällig aus
@@ -201,10 +97,12 @@ vector<Cluster> kMeansPlusPlus(vector<Point> &points, int k) {
 
     // Aktualisiere die Zentren basierend auf den Clustern
     for (int i = 0; i < k; i++) {
-      Point newCenter = computeCentroid(clusters[i].getPoints());
-      if (newCenter != centers[i]) {
-        centers[i] = newCenter;
-        changed = true;
+      if (!clusters[i].getPoints().empty()) {
+        Point newCenter = computeCentroid(clusters[i].getPoints());
+        if (newCenter != centers[i]) {
+          centers[i] = newCenter;
+          changed = true;
+        }
       }
     }
   }

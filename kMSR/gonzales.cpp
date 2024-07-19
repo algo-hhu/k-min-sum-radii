@@ -6,8 +6,8 @@
 
 using namespace std;
 
-double gonzalesrmax(const vector<Point> &points, int k) {
-  srand(1234);
+double gonzalesrmax(const vector<Point> &points, int k, int seed) {
+  srand(seed);
   vector<Point> centers;
 
   // Wähle den ersten Punkt zufällig aus den Eingabepunkten

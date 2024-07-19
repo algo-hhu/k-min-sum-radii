@@ -5,6 +5,6 @@
 
 #include "point.h"
 
-double gonzalesrmax(const std::vector<Point>& points, int k);
+double gonzalesrmax(const std::vector<Point>& points, int k, int seed);
 
 #endif  // GONZALES_H

@@ -5,57 +5,11 @@
 #include <random>
 
 #include "header/gonzales.h"
-#include "header/welzl.h"
+#include "header/heuristic.h"
+#include "header/util.h"
 #include "header/yildirim.h"
 
 using namespace std;
-
-// Berechnet den Logarithmus einer Zahl 'x' zur Basis 'b'.
-double logBase(double x, double b) { return log(x) / log(b); }
-
-// Prüft, ob jeder Punkt in der Liste 'points' von mindestens einem Ball in
-// 'balls' enthalten ist.
-bool containsAllPoints(const vector<Point> &points, const vector<Ball> &balls) {
-  for (const Point &p : points) {
-    bool isContained = false;
-    for (const Ball &b : balls) {
-      if (b.contains(p)) {
-        isContained = true;
-        break;
-      }
-    }
-    if (!isContained) {
-      return false;  // Frühes Beenden, wenn ein Punkt von keinem Ball enthalten
-                     // ist
-    }
-  }
-
-  return true;  // Alle Punkte sind von mindestens einem Ball enthalten
-}
-
-// Überprüft, ob der Punkt 'p' von mindestens einem Ball in der Liste 'balls'
-// enthalten ist.
-bool containsPoint(const Point &p, const vector<Ball> &balls) {
-  for (const Ball &b : balls) {
-    if (b.contains(p)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-// Berechnet die Gesamtkosten für alle Cluster basierend auf dem Radius des
-// kleinsten einschließenden Balls.
-double cost(vector<Cluster> &cluster) {
-  double result = 0;
-
-  for (Cluster &c : cluster) {
-    if (!c.getPoints().empty()) {
-      result += findMinEnclosingBall(c.getPoints()).getRadius();
-    }
-  }
-  return result;
-}
 
 // Berechnet ein Vektor von Vektoren von Radien für einen gegebenen maximalen
 // Radius, eine Anzahl von Bällen k und eine Genauigkeit epsilon.
@@ -101,7 +55,7 @@ vector<vector<double>> getRadii(double rmax, int k, double epsilon) {
 }
 
 vector<vector<double>> getRandomRadii(double rmax, int k, double epsilon,
-                                      int numRadiiVectors) {
+                                      int numRadiiVectors, int seed) {
   vector<double> set;
 
   // Berechnung der Anzahl der Radien, die benötigt werden, um eine ausreichende
@@ -116,7 +70,7 @@ vector<vector<double>> getRandomRadii(double rmax, int k, double epsilon,
   vector<vector<double>> result(numRadiiVectors);
 
   // Initialisiert einen Mersenne Twister-Generator mit der Seed von 'rd'.
-  mt19937 gen(1234);
+  mt19937 gen(seed);
 
   // Definiert eine Gleichverteilung für Ganzzahlen zwischen 0 und set.size()-1.
   uniform_int_distribution<> distrib(0, set.size() - 1);
@@ -139,7 +93,8 @@ vector<vector<double>> getRandomRadii(double rmax, int k, double epsilon,
 
 // Generiert eine Liste von Vektoren, die jeweils zufällige Ganzzahlen zwischen
 // 0 und k-1 enthalten.
-vector<vector<int>> getU(int n, int k, double epsilon, int numUVectors) {
+vector<vector<int>> getU(int n, int k, double epsilon, int numUVectors,
+                         int seed) {
   // Berechnet die Länge jedes Vektors basierend auf den gegebenen Parametern k
   // und epsilon.
   int length =
@@ -148,7 +103,7 @@ vector<vector<int>> getU(int n, int k, double epsilon, int numUVectors) {
   vector<vector<int>> result(numUVectors);
 
   // Initialisiert einen Mersenne Twister-Generator mit der Seed von 'rd'.
-  mt19937 gen(1234);
+  mt19937 gen(seed);
 
   // Definiert eine Gleichverteilung für Ganzzahlen zwischen 0 und k-1.
   uniform_int_distribution<> distrib(0, k - 1);
@@ -201,7 +156,6 @@ vector<Ball> selection(const vector<Point> &points, int k, const vector<int> &u,
       Ball b = findMEB(Si[u[i]], epsilon);
       b.setRadius(b.getRadius() * lambda);
       balls[u[i]] = b;
-
     } else {
       balls[u[i]] = Ball(Si[u[i]][0], (epsilon / (1 + epsilon)) * radii[u[i]]);
     }
@@ -211,14 +165,14 @@ vector<Ball> selection(const vector<Point> &points, int k, const vector<int> &u,
 
 // Hauptfunktion, die die Cluster berechnet.
 vector<Cluster> clustering(const vector<Point> &points, int k, double epsilon,
-                           int numUVectors, int numRadiiVectors) {
+                           int numUVectors, int numRadiiVectors, int seed) {
   vector<Cluster> bestCluster(k);
-  double rmax = gonzalesrmax(points, k);
+  double rmax = gonzalesrmax(points, k, seed);
 
   // Berechnung der Radien und u-Werte basierend auf 'rmax', 'k' und 'epsilon'.
   vector<vector<double>> radii =
-      getRandomRadii(rmax, k, epsilon, numRadiiVectors);
-  vector<vector<int>> u = getU(points.size(), k, epsilon, numUVectors);
+      getRandomRadii(rmax, k, epsilon, numRadiiVectors, seed);
+  vector<vector<int>> u = getU(points.size(), k, epsilon, numUVectors, seed);
 
   // Initialisiere das 'bestCluster', indem alle Punkte Teil eines Clusters
   // sind.
@@ -266,5 +220,5 @@ vector<Cluster> clustering(const vector<Point> &points, int k, double epsilon,
     }
   }
 
-  return bestCluster;
+  return mergeCluster(bestCluster);
 }

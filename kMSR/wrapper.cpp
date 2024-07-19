@@ -50,11 +50,11 @@ extern "C" {
 
 ClusterData* schmidt_wrapper(double* pointArray, int numPoints, int dimension,
                              int k, double epsilon, int numUVectors,
-                             int numRadiiVectors, int* numClusters) {
+                             int numRadiiVectors, int* numClusters, int seed) {
   vector<Point> points = arrayToVector(pointArray, numPoints, dimension);
 
   vector<Cluster> cluster =
-      clustering(points, k, epsilon, numUVectors, numRadiiVectors);
+      clustering(points, k, epsilon, numUVectors, numRadiiVectors, seed);
 
   return clusterToArray(cluster, numClusters);
 }
@@ -69,19 +69,19 @@ ClusterData* heuristic_wrapper(double* pointArray, int numPoints, int dimension,
 }
 
 ClusterData* gonzales_wrapper(double* pointArray, int numPoints, int dimension,
-                              int k, int* numClusters) {
+                              int k, int* numClusters, int seed) {
   vector<Point> points = arrayToVector(pointArray, numPoints, dimension);
 
-  vector<Cluster> cluster = gonzales(points, k);
+  vector<Cluster> cluster = gonzales(points, k, seed);
 
   return clusterToArray(cluster, numClusters);
 }
 
 ClusterData* kmeans_wrapper(double* pointArray, int numPoints, int dimension,
-                            int k, int* numClusters) {
+                            int k, int* numClusters, int seed) {
   vector<Point> points = arrayToVector(pointArray, numPoints, dimension);
 
-  vector<Cluster> cluster = kMeansPlusPlus(points, k);
+  vector<Cluster> cluster = kMeansPlusPlus(points, k, seed);
 
   return clusterToArray(cluster, numClusters);
 }
