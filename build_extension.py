@@ -101,6 +101,7 @@ class BuildExt(build_ext):
                     extension.extra_compile_args.append(param)
 
                 if platform.system() == "Linux":
+                    extension.extra_link_args.append("-fopenmp")
                     extension.extra_link_args.append("-lgomp")
         try:
             build_ext.build_extensions(self)
