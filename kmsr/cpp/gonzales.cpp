@@ -25,7 +25,7 @@ double gonzalesrmax(const vector<Point> &points, int k, int seed)
   while (static_cast<int>(centers.size()) < k)
   {
     // Choose the next center based on the maximum distance
-    int nextCenterIndex = distance(
+    size_t nextCenterIndex = distance(
         distances.begin(), max_element(distances.begin(), distances.end()));
     Point nextCenter = points[nextCenterIndex];
     centers.push_back(nextCenter);
