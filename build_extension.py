@@ -79,7 +79,7 @@ class BuildExt(build_ext):
             extension.extra_compile_args.append("-std=c++11")
             if support:
                 extension.extra_compile_args.append("-fopenmp")
-                extension.extra_link_args.append("-lomp")
+                extension.extra_link_args.append("-lgomp")
             else:
                 warnings.warn(
                     "\x1b[31;20m OpenMP is not installed on this system. "
