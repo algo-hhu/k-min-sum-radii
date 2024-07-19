@@ -12,7 +12,7 @@ kMSR provides various implementations to solve the k-Min-Sum-Radii problem. The 
 - `gonzales`: This is the standard [Gonzales algorithm](https://doi.org/10.1016/0304-3975(85)90224-5) for $k$-center.
 - `kmeans`: This is the [k-means++ algorithm](https://doi.org/10.5555/1283383.1283494) for $k$-means.
 
-Although the last two algorithms are not specifically designed for the k-Min-Sum-Radii problem, they serve as useful baselines for comparing the performance of other algorithms. Additionally, an optimization unique to this problem has been integrated into all algorithms: intersecting balls are merged at the end, resulting in a more cost-effective solution.
+Although the last two algorithms are not specifically designed for the k-Min-Sum-Radii problem, they serve as useful baselines for comparing the performance of other algorithms. Additionally, an optimization has been integrated into all algorithms: intersecting balls are merged at the end, resulting in a more cost-effective solution.
 
 **You can try kMSR out on our [Clustering Toolkit](https://clustering-toolkit.algo.hhu.de/K-Min_Sum_Radii_Clustering)!**
 
