@@ -20,7 +20,7 @@ vector<vector<double>> getRadii(double rmax, int k, double epsilon)
   vector<double> set;
 
   // Calculate the number of radii needed to ensure sufficient coverage
-  int limit = ceil(logBase((k / epsilon), (1 + epsilon)));
+  int limit = static_cast<int>(ceil(logBase((k / epsilon), (1 + epsilon))));
 
   // Create the set of radii whose permutations will be formed.
   for (int i = 0; i <= limit; i++)
@@ -63,7 +63,7 @@ vector<vector<double>> getRandomRadii(double rmax, int k, double epsilon,
   vector<double> set;
 
   // Calculate the number of radii needed to ensure sufficient coverage
-  int limit = ceil(logBase((k / epsilon), (1 + epsilon)));
+  int limit = static_cast<int>(ceil(logBase((k / epsilon), (1 + epsilon))));
 
   // Create the set of radii whose permutations will be formed.
   for (int i = 0; i <= limit; i++)
@@ -77,7 +77,7 @@ vector<vector<double>> getRandomRadii(double rmax, int k, double epsilon,
   mt19937 gen(seed);
 
   // Define a uniform distribution for integers between 0 and set.size()-1.
-  uniform_int_distribution<> distrib(0, set.size() - 1);
+  uniform_int_distribution<> distrib(0, static_cast<int>(set.size()) - 1);
 
   // Generate numVectors number of vectors.
   for (int i = 0; i < numRadiiVectors; i++)
@@ -131,7 +131,7 @@ vector<vector<int>> getU(int n, int k, double epsilon, int numUVectors, int seed
 vector<Ball> selection(const vector<Point> &points, int k, const vector<int> &u,
                        const vector<double> &radii, double epsilon)
 {
-  vector<Ball> balls(k, Ball(points.front().getCoordinates().size()));
+  vector<Ball> balls(k, Ball(static_cast<int>(points.front().getCoordinates().size())));
   vector<vector<Point>> Si(k);
   double lambda = 1 + epsilon + 2 * sqrt(epsilon);
 
