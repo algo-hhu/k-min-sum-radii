@@ -181,7 +181,7 @@ vector<Cluster> clustering(const vector<Point> &points, int k, double epsilon,
   // Calculate the radii and u values based on 'rmax', 'k', and 'epsilon'.
   vector<vector<double>> radii =
       getRandomRadii(rmax, k, epsilon, numRadiiVectors, seed);
-  vector<vector<int>> u = getU(points.size(), k, epsilon, numUVectors, seed);
+  vector<vector<int>> u = getU(static_cast<int>(points.size()), k, epsilon, numUVectors, seed);
 
   // Initialize the 'bestCluster' by making all points part of a cluster.
   bestCluster[0].setPoints(points);
