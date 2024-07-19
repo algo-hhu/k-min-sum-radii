@@ -109,6 +109,10 @@ vector<Cluster> kMeansPlusPlus(vector<Point> &points, int k, int seed)
     // Update the centers based on the clusters
     for (int i = 0; i < k; i++)
     {
+      if (clusters[i].getPoints().empty())
+      {
+        continue;
+      }
       Point newCenter = computeCentroid(clusters[i].getPoints());
       if (newCenter != centers[i])
       {
