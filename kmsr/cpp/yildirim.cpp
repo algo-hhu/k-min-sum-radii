@@ -8,7 +8,7 @@ using namespace std;
 // Function to find the furthest point from a given point
 int findFurthestPoint(const std::vector<Point> &points, const Point &p)
 {
-  int furthestIndex = 0;
+  size_t furthestIndex = 0;
   double maxDistSquared = 0.0;
   for (size_t i = 0; i < points.size(); i++)
   {
@@ -21,7 +21,7 @@ int findFurthestPoint(const std::vector<Point> &points, const Point &p)
       furthestIndex = i;
     }
   }
-  return furthestIndex;
+  return static_cast<int>(furthestIndex);
 }
 
 // Function to calculate the weighted sum of the squares of the coordinates

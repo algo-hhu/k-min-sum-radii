@@ -71,7 +71,10 @@ class BuildExt(build_ext):
     """A custom build extension for adding -stdlib arguments for clang++."""
 
     def build_extensions(self) -> None:
-        support = check_openmp_support()
+        if os.name == "nt":
+            support = True
+        else:
+            support = check_openmp_support()
 
         # '-std=c++11' is added to `extra_compile_args` so the code can compile
         # with clang++. This works across compilers (ignored by MSVC).
