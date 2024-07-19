@@ -39,7 +39,7 @@ On MacOS, you can use the following command:
 ```bash
  brew install llvm libomp
 ```
-However, it might be that MacOS does not find the installed library. In [`build_extension.py`](./build_extension.py), the paths are set manually. If it does not work for you, please clone the repository and run `poetry build`. You you see a message in red if your OpenMP is not found.
+However, it might be that MacOS does not find the installed library. In [`build_extension.py`](./build_extension.py), the paths are set manually. If it does not work for you, please clone the repository and run `poetry build`. You will see a message in red if your OpenMP is not found.
 
 Then, you can install the package via pip:
 ```bash
