@@ -215,6 +215,7 @@ vector<Cluster> clustering(const vector<Point> &points, int k, double epsilon,
           }
         }
 
+        // TODO: Is the better to merge clusters at every iterations for small Us?
         // localCluster = mergeCluster(localCluster);
         // Calculate the cost for the local clusters.
         double localCost = cost(localCluster);

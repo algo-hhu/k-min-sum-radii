@@ -48,7 +48,7 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
         self._seed = int(time()) if random_state is None else random_state
         self.n_clusters = n_clusters
         self.epsilon = epsilon
-        self.algorithm = "schmidt" if algorithm == "auto" else algorithm
+        self.algorithm = "schmidt" if algorithm == "auto" else algorithm.lower()
         self.n_u = n_u
         self.n_test_radii = n_test_radii
         self.random_state = check_random_state(self._seed)
