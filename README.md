@@ -7,7 +7,7 @@
 
 kMSR provides various implementations to solve the k-Min-Sum-Radii problem. The k-Min-Sum-Radii problem is a clustering problem that aims to minimize the sum of the radii of the clusters. Given a set of points, the aim is to find $k$ balls such that the the sum of the radii of the balls is minimized. The package provides the following algorithms:
 
-- `schmidt`: The algorithm is described in [this paper](https://doi.org/10.1007/978-3-031-49815-2_9). In practice, this works well for clusters that are not too separated. The algorithm uses the parameters `epsilon`, `n_u`, and `num_test_radii` to control the trade-off between the quality of the solution and the runtime. Increase `n_u` for a more accurate solution.
+- `schmidt`: The algorithm is described in [this paper](https://doi.org/10.1007/978-3-031-49815-2_9). In practice, this works well for clusters that are not too separated. The algorithm uses the parameters `epsilon`, `n_u`, and `num_test_radii` to control the trade-off between the quality of the solution and the runtime. Increase `n_u` for a more accurate solution, which will however require more computation time.
 - `heuristic`: The algorithm is a simple heuristic that explores all possible combinations for the first cluster, and then selects the remaining centers as the points farthest from the radius of the first cluster. This algorithm works well in practice but it not practical for large datasets.
 - `gonzales`: This is the standard [Gonzales algorithm](https://doi.org/10.1016/0304-3975(85)90224-5) for $k$-center.
 - `kmeans`: This is the [k-means++ algorithm](https://doi.org/10.5555/1283383.1283494) for $k$-means.
@@ -39,7 +39,7 @@ On MacOS, you can use the following command:
 ```bash
  brew install llvm libomp
 ```
-However, it might be that MacOS does not find the installed library. In [`build_extension.py`](./build_extension.py), the paths are set manually. If it does not work for you, please clone the repository and run `poetry build`. You you see a message in red if your OpenMP is not found.
+However, it might be that MacOS does not find the installed library. In [`build_extension.py`](./build_extension.py), the paths are set manually. If it does not work for you, please clone the repository and run `poetry build`. You will see a message in red if your OpenMP is not found.
 
 Then, you can install the package via pip:
 ```bash
