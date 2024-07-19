@@ -1,3 +1,6 @@
+import os
+import subprocess
+import warnings
 from typing import Any, Dict
 
 from setuptools import Extension
@@ -21,18 +24,67 @@ extension = Extension(
     include_dirs=["kmsr"],
 )
 
-# Thank you https://github.com/dstein64/kmeans1d!
+
+def check_openmp_support() -> bool:
+    openmp_test_code = """
+    #include <omp.h>
+    #include <stdio.h>
+    int main() {
+        int nthreads;
+        #pragma omp parallel
+        {
+            nthreads = omp_get_num_threads();
+        }
+        printf("Number of threads = %d\\n", nthreads);
+        return 0;
+    }
+    """
+
+    with open("test_openmp.c", "w") as f:
+        f.write(openmp_test_code)
+
+    try:
+        # Try to compile the code with OpenMP support
+        result = subprocess.run(
+            ["gcc", "-fopenmp", "test_openmp.c", "-o", "test_openmp"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        if result.returncode != 0:
+            return False
+
+        # Run the compiled program
+        result = subprocess.run(
+            ["./test_openmp"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        if result.returncode == 0:
+            return True
+        else:
+            return False
+    finally:
+        os.remove("test_openmp.c")
+        if os.path.exists("test_openmp"):
+            os.remove("test_openmp")
 
 
 class BuildExt(build_ext):
     """A custom build extension for adding -stdlib arguments for clang++."""
 
     def build_extensions(self) -> None:
+        support = check_openmp_support()
+
         # '-std=c++11' is added to `extra_compile_args` so the code can compile
         # with clang++. This works across compilers (ignored by MSVC).
         for extension in self.extensions:
             extension.extra_compile_args.append("-std=c++11")
-            extension.extra_compile_args.append("-fopenmp")
+            if support:
+                extension.extra_compile_args.append("-fopenmp")
+                extension.extra_link_args.append("-lomp")
+            else:
+                warnings.warn(
+                    "\x1b[31;20m OpenMP is not installed on this system. "
+                    "Please install it to have all the benefits from the program.\x1b[0m"
+                )
 
         try:
             build_ext.build_extensions(self)
@@ -43,7 +95,6 @@ class BuildExt(build_ext):
             for extension in self.extensions:
                 extension.extra_compile_args.append("-stdlib=libc++")
                 extension.extra_link_args.append("-stdlib=libc++")
-                extension.extra_link_args.append("-lomp")
             build_ext.build_extensions(self)
 
 
