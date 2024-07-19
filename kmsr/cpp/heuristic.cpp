@@ -18,7 +18,7 @@ using namespace std;
 vector<Cluster> gonzales(vector<Point> &points, int k, int seed)
 {
   srand(seed);
-  size_t n = points.size();
+  int n = static_cast<int>(points.size());
   vector<Point> centers;
   centers.push_back(points[rand() % n]);
 
@@ -29,7 +29,7 @@ vector<Cluster> gonzales(vector<Point> &points, int k, int seed)
     double maxDist = -1.0;
 
     // Find the point that is farthest from its nearest center
-    for (size_t j = 0; j < n; j++)
+    for (int j = 0; j < n; j++)
     {
       double dist = numeric_limits<double>::max();
       for (Point center : centers)
@@ -54,7 +54,7 @@ vector<Cluster> gonzales(vector<Point> &points, int k, int seed)
 
 vector<Cluster> kMeansPlusPlus(vector<Point> &points, int k, int seed)
 {
-  size_t n = points.size();
+  int n = static_cast<int>(points.size());
   vector<Point> centers;
   mt19937 gen(seed);
   uniform_int_distribution<> dis(0, n - 1);
