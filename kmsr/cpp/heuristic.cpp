@@ -18,7 +18,7 @@ using namespace std;
 vector<Cluster> gonzales(vector<Point> &points, int k, int seed)
 {
   srand(seed);
-  int n = points.size();
+  int n = static_cast<int>(points.size());
   vector<Point> centers;
   centers.push_back(points[rand() % n]);
 
@@ -54,7 +54,7 @@ vector<Cluster> gonzales(vector<Point> &points, int k, int seed)
 
 vector<Cluster> kMeansPlusPlus(vector<Point> &points, int k, int seed)
 {
-  int n = points.size();
+  int n = static_cast<int>(points.size());
   vector<Point> centers;
   mt19937 gen(seed);
   uniform_int_distribution<> dis(0, n - 1);
@@ -130,7 +130,7 @@ vector<Cluster> kMeansPlusPlus(vector<Point> &points, int k, int seed)
 
 vector<Cluster> heuristik(vector<Point> &points, int k)
 {
-  int n = points.size();
+  int n = static_cast<int>(points.size());
   vector<Cluster> bestCluster;
   bestCluster.push_back(
       Cluster(points)); // Initialize with all points in one cluster
