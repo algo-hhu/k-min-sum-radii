@@ -179,7 +179,7 @@ def plot_multiple_results(
     transparent: bool = True,
     show: bool = True,
     close: bool = True,
-) -> Tuple[plt.Figure, plt.Axes]:
+) -> Tuple[plt.Figure, List[plt.Axes]]:
     proj = get_projection(len(points[0]))
 
     if clusters is not None:
