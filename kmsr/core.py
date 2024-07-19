@@ -23,7 +23,7 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
     _parameter_constraints: dict = {
         "n_clusters": [Interval(Integral, 1, None, closed="left")],
         "algorithm": [
-            StrOptions({"auto", "schmidt", "heuristic", "gonzales", "kmeans"})
+            StrOptions({"auto", "fpt-heuristic", "heuristic", "gonzales", "kmeans"})
         ],
         "epsilon": [Interval(Real, 0, None, closed="left")],
         "n_u": [Interval(Integral, 1, None, closed="left")],
@@ -48,7 +48,7 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
         self._seed = int(time()) if random_state is None else random_state
         self.n_clusters = n_clusters
         self.epsilon = epsilon
-        self.algorithm = "schmidt" if algorithm == "auto" else algorithm.lower()
+        self.algorithm = "fpt-heuristic" if algorithm == "auto" else algorithm.lower()
         self.n_u = n_u
         self.n_test_radii = n_test_radii
         self.random_state = check_random_state(self._seed)
@@ -125,7 +125,7 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
         c_centers = (ctypes.c_double * self.n_features_in_ * self.n_clusters)()
         c_radii = (ctypes.c_double * self.n_clusters)()
 
-        if self.algorithm == "schmidt":
+        if self.algorithm == "fpt-heuristic":
             c_epsilon = ctypes.c_double(self.epsilon)
             c_u = ctypes.c_int(self.n_u)
             c_num_radii = ctypes.c_int(self.n_test_radii)
