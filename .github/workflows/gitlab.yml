@@ -1,12 +1,12 @@
 name: Trigger Gitlab Pipeline
 on:
-    # push:
-    #   branches:
-    #     - main
-    #   paths:
-    #     - "kmsr/**"
-    #     - "tests/**"
-    #     - "poetry.lock"
+    push:
+      branches:
+        - main
+      paths:
+        - "kmsr/**"
+        - "tests/**"
+        - "poetry.lock"
     pull_request:
       paths:
         - "kmsr/**"
