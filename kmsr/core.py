@@ -41,8 +41,8 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
         n_clusters: int = 3,
         algorithm: str = "auto",
         epsilon: float = 0.5,
-        n_u: int = 100,
-        n_test_radii: int = 5,
+        n_u: int = 1000,
+        n_test_radii: int = 10,
         random_state: Optional[int] = None,
     ) -> None:
         self._seed = int(time()) if random_state is None else random_state
