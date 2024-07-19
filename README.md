@@ -53,8 +53,26 @@ poetry run python -m unittest discover tests -v
 
 ## Citation
 
-If you use this code, please cite [the following paper](TODO):
+If you use this cose, please cite the following bachelor thesis:
 
 ```
-TODO
+N. Lenßen, "Experimentelle Analyse von Min-Sum-Radii Approximationsalgorithmen". Bachelorarbeit, Heinrich-Heine-Universität Düsseldorf, 2024.
+```
+
+Moreover, depending on the selection of the `algorithm` parameter, you should also cite the [following paper](https://doi.org/10.1007/978-3-031-49815-2_9) for `algorithm='schmidt'`:
+
+```
+L. Drexler, A. Hennes, A. Lahiri, M. Schmidt, and J. Wargalla, "Approximating Fair K-Min-Sum-Radii in Euclidean Space," in Lecture notes in computer science, 2023, pp. 119–133. doi: 10.1007/978-3-031-49815-2_9.
+```
+
+the [following paper](https://doi.org/10.1016/0304-3975(85)90224-5) for `algorithm='gonzales'`:
+
+```
+T. F. Gonzalez, "Clustering to minimize the maximum intercluster distance," Theoretical Computer Science, vol. 38, pp. 293–306, Jan. 1985, doi: 10.1016/0304-3975(85)90224-5.
+```
+
+and the [following paper](https://doi.org/10.5555/1283383.1283494) for `algorithm='kmeans'`:
+
+```
+D. Arthur and S. Vassilvitskii, "k-means++: the advantages of careful seeding," Symposium on Discrete Algorithms, pp. 1027–1035, Jan. 2007, doi: 10.5555/1283383.1283494.
 ```
