@@ -63,9 +63,11 @@ def plot_3d_ax(
     title: Optional[str] = None,
     edge_color: str = "black",
 ) -> None:
-    ax.scatter(points[:, 0], points[:, 1], points[:, 2], c=clusters, s=20, cmap="Set2")
+    ax.scatter(  # type: ignore
+        points[:, 0], points[:, 1], points[:, 2], c=clusters, s=20, cmap="Set2"
+    )
     _centers = np.array(centers)
-    ax.scatter(
+    ax.scatter(  # type: ignore
         _centers[:, 0],
         _centers[:, 1],
         _centers[:, 2],
@@ -81,7 +83,9 @@ def plot_3d_ax(
             x = c_x + radius * np.cos(u) * np.sin(v)
             y = c_y + radius * np.sin(u) * np.sin(v)
             z = c_z + radius * np.cos(v)
-            ax.plot_wireframe(x, y, z, linestyle="--", color=edge_color, alpha=0.3)
+            ax.plot_wireframe(  # type: ignore
+                x, y, z, linestyle="--", color=edge_color, alpha=0.3
+            )
 
             if clusters is not None:
                 _clusters = np.array(clusters)
@@ -102,7 +106,7 @@ def plot_3d_ax(
 
     ax.set_xlabel("Feature 1")
     ax.set_ylabel("Feature 2")
-    ax.set_zlabel("Feature 3")
+    ax.set_zlabel("Feature 3")  # type: ignore
 
     ax.set_aspect("equal")
 
