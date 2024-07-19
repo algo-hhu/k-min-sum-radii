@@ -109,7 +109,7 @@ poetry run python -m unittest discover tests -v
 
 ## Citation
 
-If you use this cose, please cite the following bachelor thesis:
+If you use this code, please cite the following bachelor thesis:
 
 ```
 N. Lenßen, "Experimentelle Analyse von Min-Sum-Radii Approximationsalgorithmen". Bachelorarbeit, Heinrich-Heine-Universität Düsseldorf, 2024.
