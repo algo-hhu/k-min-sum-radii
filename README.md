@@ -16,7 +16,54 @@ pip install kmsr
 
 ## Example
 
-TODO
+```python
+from kmsr import KMSR
+from kmsr.plot import plot_multiple_results
+from sklearn.datasets import make_blobs
+from time import time
+
+points, ground_truth = make_blobs(
+    n_samples=100,
+    n_features=2,
+    centers=2,
+    cluster_std=0.6,
+    shuffle=True,
+    random_state=42,
+)
+
+labels = []
+centers = []
+radii = []
+titles = []
+for algo in ["Schmidt", "Heuristic", "Gonzales", "KMeans"]:
+    kmsr = KMSR(
+        n_clusters=5,
+        algorithm=algo,
+        epsilon=0.5,
+        n_u=10000,
+        n_test_radii=10,
+        random_state=42,
+    )
+    start = time()
+    kmsr.fit(points)
+    end = time() - start
+    labels.append(kmsr.labels_)
+    centers.append(kmsr.cluster_centers_)
+    radii.append(kmsr.cluster_radii_)
+    titles.append(f"{algo}: {sum(kmsr.cluster_radii_):.3f}, Time: {end:.3f}s")
+
+plot_multiple_results(
+    points,
+    clusters=labels,
+    centers=centers,
+    radii=radii,
+    title=titles,
+)
+```
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/algo-hhu/k-min-sum-radii/main/images/example.png" alt="Comparison of the Different Methods for kMSR"/>
+</p>
 
 ## Development
 
