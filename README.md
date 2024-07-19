@@ -19,6 +19,18 @@ Although the last two algorithms are not specifically designed for the k-Min-Sum
 
 ## Installation
 
+We **highly recommend** to install OpenMP. Parts of the code are parallelized and will be much faster. However, the code should run even without it. If that is not the case, open an issue!
+
+On Linux, you can use the following command:
+```bash
+sudo apt-get install libomp-dev
+```
+On MacOS, you can use the following command:
+```bash
+ brew install clang-omp
+```
+
+Then, you can install the package via pip:
 ```bash
 pip install kmsr
 ```
