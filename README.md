@@ -23,8 +23,17 @@ We **highly recommend** to install OpenMP. Parts of the code are parallelized an
 
 On Linux, you can use the following command:
 ```bash
-sudo apt-get install libomp-dev
+# Alpine
+sudo apk add openmp-dev libgomp
+# Ubuntu
+sudo apt-get install libomp-dev libgomp1
+# Debian
+sudo apt-get install gcc libomp-dev libomp5 libgomp1
+# ArchLinux
+sudo pacnam -S openmp
+ln -s libomp.so libomp.so.5
 ```
+We have tested this on docker, so it might be a little different on your system.
 
 On MacOS, you can use the following command:
 ```bash
