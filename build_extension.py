@@ -19,8 +19,6 @@ extension = Extension(
         "kmsr/cpp/yildirim.cpp",
     ],
     include_dirs=["kmsr"],
-    extra_compile_args=["-fopenmp"],
-    extra_link_args=["-lgomp"],
 )
 
 # Thank you https://github.com/dstein64/kmeans1d!
@@ -34,6 +32,8 @@ class BuildExt(build_ext):
         # with clang++. This works across compilers (ignored by MSVC).
         for extension in self.extensions:
             extension.extra_compile_args.append("-std=c++11")
+            extension.extra_compile_args.append("-fopenmp")
+
         try:
             build_ext.build_extensions(self)
         except CompileError:
@@ -43,6 +43,7 @@ class BuildExt(build_ext):
             for extension in self.extensions:
                 extension.extra_compile_args.append("-stdlib=libc++")
                 extension.extra_link_args.append("-stdlib=libc++")
+                extension.extra_link_args.append("-lomp")
             build_ext.build_extensions(self)
 
 
