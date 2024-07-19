@@ -130,7 +130,7 @@ vector<Cluster> kMeansPlusPlus(vector<Point> &points, int k, int seed)
 
 vector<Cluster> heuristik(vector<Point> &points, int k)
 {
-  size_t n = points.size();
+  int n = static_cast<int>(points.size());
   vector<Cluster> bestCluster;
   bestCluster.push_back(
       Cluster(points)); // Initialize with all points in one cluster
@@ -138,9 +138,9 @@ vector<Cluster> heuristik(vector<Point> &points, int k)
 
 // Calculation of distances between all points
 #pragma omp parallel for collapse(2)
-  for (size_t i = 0; i < n; i++)
+  for (int i = 0; i < n; i++)
   {
-    for (size_t j = 0; j < n; j++)
+    for (int j = 0; j < n; j++)
     {
       distances[i][j] = Point::distance(points[i], points[j]);
     }
@@ -154,9 +154,9 @@ vector<Cluster> heuristik(vector<Point> &points, int k)
         cost(localBestCluster); // Cost of the local best clusters
 
 #pragma omp for
-    for (size_t i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
     {
-      for (size_t j = 0; j < n; j++)
+      for (int j = 0; j < n; j++)
       {
         vector<Point> centers;
         Point largestCenter = points[i];
@@ -169,7 +169,7 @@ vector<Cluster> heuristik(vector<Point> &points, int k)
           int nextCenter = -1;
           double maxDist = -1.0;
 
-          for (size_t h = 0; h < n; h++)
+          for (int h = 0; h < n; h++)
           {
             double dist = numeric_limits<double>::max();
             for (const Point &center : centers)
