@@ -12,7 +12,7 @@ def check_cost(inertia: float, radii: np.ndarray) -> Any:
     return np.isclose(inertia, sum(radii))
 
 
-class TestFLSPP(unittest.TestCase):
+class TestKMSR(unittest.TestCase):
     def test_fit(self) -> None:
         random.seed(42)
         for k in range(2, 5):

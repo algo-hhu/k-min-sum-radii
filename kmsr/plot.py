@@ -160,18 +160,18 @@ def plot_result(
 
 def plot_multiple_results(
     points: Sequence[Sequence[float]],
-    clusterings: Optional[Sequence[Optional[Sequence[int]]]] = None,
+    clusters: Optional[Sequence[Optional[Sequence[int]]]] = None,
     centers: Optional[Sequence[Optional[Sequence[Sequence[float]]]]] = None,
     radii: Optional[Sequence[Optional[Sequence[float]]]] = None,
-    titles: Optional[Optional[Sequence[str]]] = None,
+    title: Optional[Optional[Sequence[str]]] = None,
     output_path: Optional[Path] = None,
     show: bool = True,
     transparent: bool = True,
 ) -> None:
     proj = get_projection(len(points[0]))
 
-    if clusterings is not None:
-        ll = len(clusterings)
+    if clusters is not None:
+        ll = len(clusters)
     elif centers is not None:
         ll = len(centers)
     elif radii is not None:
@@ -190,8 +190,8 @@ def plot_multiple_results(
             subplot_kw=dict(projection=proj),
         )
 
-    if clusterings is None:
-        clusterings = [None] * ll
+    if clusters is None:
+        clusters = [None] * ll
 
     if centers is None:
         centers = [None] * ll
@@ -199,10 +199,10 @@ def plot_multiple_results(
     if radii is None:
         radii = [None] * ll
 
-    if titles is None:
-        titles = [f"Plot {i}" for i in range(ll)]
+    if title is None:
+        title = [f"Plot {i}" for i in range(ll)]
 
-    for params in zip(axs, clusterings, centers, radii, titles):
+    for params in zip(axs, clusters, centers, radii, title):
         plot_ax(np.array(points), *params)
 
     if output_path is not None:
