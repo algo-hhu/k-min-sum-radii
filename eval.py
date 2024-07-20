@@ -1,3 +1,4 @@
+from random import seed
 import generator
 import plot
 import matplotlib.pyplot as plt
@@ -9,6 +10,9 @@ import csv
 import ctypes
 import time
 import miniball
+from typing import List
+from tabulate import tabulate
+
 
 # Laden der C-Bibliothek
 lib = ctypes.CDLL('./clustering.so')
@@ -27,7 +31,7 @@ class ClusterData(ctypes.Structure):
 
 
 # Definition der Argument- und Rückgabetypen für die C-Funktionen
-lib.schmidt_wrapper.argtypes = [
+lib.FPT_Heuristic_wrapper.argtypes = [
     ctypes.POINTER(ctypes.c_double),
     ctypes.c_int,
     ctypes.c_int,
@@ -35,34 +39,38 @@ lib.schmidt_wrapper.argtypes = [
     ctypes.c_double,
     ctypes.c_int,
     ctypes.c_int,
-    ctypes.POINTER(ctypes.c_int)
+    ctypes.POINTER(ctypes.c_int),
+    ctypes.c_int
 ]
-lib.schmidt_wrapper.restype = ctypes.POINTER(ClusterData)
+lib.FPT_Heuristic_wrapper.restype = ctypes.POINTER(ClusterData)
 
 lib.heuristic_wrapper.argtypes = [
     ctypes.POINTER(ctypes.c_double),
     ctypes.c_int,
     ctypes.c_int,
     ctypes.c_int,
-    ctypes.POINTER(ctypes.c_int)
+    ctypes.POINTER(ctypes.c_int),
+    ctypes.c_int
 ]
 lib.heuristic_wrapper.restype = ctypes.POINTER(ClusterData)
 
-lib.gonzales_wrapper.argtypes = [
+lib.gonzalez_wrapper.argtypes = [
     ctypes.POINTER(ctypes.c_double),
     ctypes.c_int,
     ctypes.c_int,
     ctypes.c_int,
-    ctypes.POINTER(ctypes.c_int)
+    ctypes.POINTER(ctypes.c_int),
+    ctypes.c_int
 ]
-lib.gonzales_wrapper.restype = ctypes.POINTER(ClusterData)
+lib.gonzalez_wrapper.restype = ctypes.POINTER(ClusterData)
 
 lib.kmeans_wrapper.argtypes = [
     ctypes.POINTER(ctypes.c_double),
     ctypes.c_int,
     ctypes.c_int,
     ctypes.c_int,
-    ctypes.POINTER(ctypes.c_int)
+    ctypes.POINTER(ctypes.c_int),
+    ctypes.c_int
 ]
 lib.kmeans_wrapper.restype = ctypes.POINTER(ClusterData)
 
@@ -134,24 +142,30 @@ def read_points_from_csv(input_file):
 
 
 # Funktion zum Aufrufen der C-Funktionen
-def call_clustering_function(clustering_func, c_array, numPoints, dimensions, k, num_clusters):
+def call_clustering_function(clustering_func, c_array, numPoints, dimensions, k, num_clusters, seed):
     cluster_ptr = clustering_func(
         c_array,
         numPoints,
         dimensions,
         k,
-        num_clusters
+        num_clusters,
+        seed
     )
     return cluster_ptr
 
 
 # Funktion zur Durchführung des Clusterings mit verschiedenen Algorithmen
-def cluster(point_files, dimension, k, ball_directory, cluster_directory, plot_directory, point_directory, algorithm, c_function):
+def cluster(point_files, dimension, k, directory, point_directory, algorithm, c_function, seed):
+    ball_directory = os.path.join(directory, f'{algorithm}/Seed={seed}/Balls')
+    cluster_directory = os.path.join(directory, f'{algorithm}/Seed={seed}/Cluster')
+    plot_directory = os.path.join(directory, f'{algorithm}/Seed={seed}/Plots')
+    result_directory = os.path.join(directory, f'{algorithm}/Seed={seed}/Results')
+
     # Verzeichnisse erstellen, falls sie nicht existieren
-    os.makedirs(os.path.join(ball_directory, algorithm), exist_ok=True)
-    os.makedirs(os.path.join(cluster_directory, algorithm), exist_ok=True)
-    os.makedirs(os.path.join(plot_directory, algorithm), exist_ok=True)
-    os.makedirs(os.path.join(f'Data/{dimension}/{k}/Results', algorithm), exist_ok=True)
+    os.makedirs(ball_directory, exist_ok=True)
+    os.makedirs(cluster_directory, exist_ok=True)
+    os.makedirs(plot_directory, exist_ok=True)
+    os.makedirs(result_directory, exist_ok=True)
 
     # Regex-Muster zum Extrahieren der Nummer aus dem Dateinamen
     pattern = r'points_(\d+)\.csv'
@@ -166,9 +180,9 @@ def cluster(point_files, dimension, k, ball_directory, cluster_directory, plot_d
 
         # Definieren der Pfade für die Point-, Ball-, Cluster- und Plot-Dateien
         point_path = os.path.join(point_directory, point_file)
-        ball_path = os.path.join(ball_directory, algorithm, f'balls_{number}.csv')
-        cluster_path = os.path.join(cluster_directory, algorithm, f'cluster_{number}.csv')
-        plot_path = os.path.join(plot_directory, algorithm, f'plot_{number}.pdf')
+        ball_path = os.path.join(ball_directory, f'balls_{number}.csv')
+        cluster_path = os.path.join(cluster_directory, f'cluster_{number}.csv')
+        plot_path = os.path.join(plot_directory, f'plot_{number}.pdf')
 
         # Lesen der Punkte aus der CSV-Datei und Umwandeln in ein C-Array
         c_array, numPoints = read_points_from_csv(point_path)
@@ -184,7 +198,8 @@ def cluster(point_files, dimension, k, ball_directory, cluster_directory, plot_d
             numPoints,
             dimension,
             k,
-            ctypes.byref(num_clusters)
+            ctypes.byref(num_clusters),
+            seed
         )
 
         end_time = time.time()
@@ -217,18 +232,24 @@ def cluster(point_files, dimension, k, ball_directory, cluster_directory, plot_d
     results.sort(key=lambda x: (x[0]))
 
     # Ergebnisse in eine CSV-Datei schreiben
-    with open(f'Data/{dimension}/{k}/Results/{algorithm}/results.csv', 'w') as f:
+    with open(f'{result_directory}/results.csv', 'w') as f:
         f.write('Datei,Dauer (Sekunden),Summe_der_Radien\n')
         for point_file, duration, radii in results:
             f.write(f'{point_file},{duration},{radii}\n')
 
 
-def schmidt(point_files, dimension, k, epsilon_values, u_values, num_radii_values, ball_directory, cluster_directory, plot_directory, point_directory):
+def FPT_Heuristic(point_files, dimension, k, epsilon_values, u_values, num_radii_values, directory, point_directory, seed):
+
+    ball_directory = os.path.join(directory, f'FPT_Heuristic/Seed={seed}/Balls')
+    cluster_directory = os.path.join(directory, f'FPT_Heuristic/Seed={seed}/Cluster')
+    plot_directory = os.path.join(directory, f'FPT_Heuristic/Seed={seed}/Plots')
+    result_directory = os.path.join(directory, f'FPT_Heuristic/Seed={seed}/Results')
+
     # Verzeichnisse erstellen, falls sie nicht existieren
-    os.makedirs(os.path.join(ball_directory, 'Schmidt'), exist_ok=True)
-    os.makedirs(os.path.join(cluster_directory, 'Schmidt'), exist_ok=True)
-    os.makedirs(os.path.join(plot_directory, 'Schmidt'), exist_ok=True)
-    os.makedirs(os.path.join(f'Data/{dimension}/{k}/Results', 'Schmidt'), exist_ok=True)
+    os.makedirs(ball_directory, exist_ok=True)
+    os.makedirs(cluster_directory, exist_ok=True)
+    os.makedirs(plot_directory, exist_ok=True)
+    os.makedirs(result_directory, exist_ok=True)
 
     # Regex-Muster zum Extrahieren der Nummer aus dem Dateinamen
     pattern = r'points_(\d+)\.csv'
@@ -247,9 +268,9 @@ def schmidt(point_files, dimension, k, epsilon_values, u_values, num_radii_value
             for num_radii in num_radii_values:
                 for u in u_values:
                     # Definieren der Pfade für die Ball-, Cluster- und Plot-Dateien
-                    ball_path = os.path.join(ball_directory, 'Schmidt', f'balls_{number}_u{u}_epsilon{epsilon}_num_radii{num_radii}.csv')
-                    cluster_path = os.path.join(cluster_directory, 'Schmidt', f'cluster_{number}_u{u}_epsilon{epsilon}_num_radii{num_radii}.csv')
-                    plot_path = os.path.join(plot_directory, 'Schmidt', f'plot_{number}_u{u}_epsilon{epsilon}_num_radii{num_radii}.pdf')
+                    ball_path = os.path.join(ball_directory, f'balls_{number}_u{u}_epsilon{epsilon}_num_radii{num_radii}.csv')
+                    cluster_path = os.path.join(cluster_directory, f'cluster_{number}_u{u}_epsilon{epsilon}_num_radii{num_radii}.csv')
+                    plot_path = os.path.join(plot_directory, f'plot_{number}_u{u}_epsilon{epsilon}_num_radii{num_radii}.pdf')
 
                     # Lesen der Punkte aus der CSV-Datei und Umwandeln in ein C-Array
                     c_array, numPoints = read_points_from_csv(point_path)
@@ -259,7 +280,7 @@ def schmidt(point_files, dimension, k, epsilon_values, u_values, num_radii_value
                     start_time = time.time()
 
                     # Rufe die C-Funktion auf
-                    cluster_ptr = lib.schmidt_wrapper(
+                    cluster_ptr = lib.FPT_Heuristic_wrapper(
                         c_array,
                         numPoints,
                         dimension,
@@ -267,7 +288,8 @@ def schmidt(point_files, dimension, k, epsilon_values, u_values, num_radii_value
                         epsilon,
                         u,
                         num_radii,
-                        ctypes.byref(num_clusters)
+                        ctypes.byref(num_clusters),
+                        seed
                     )
 
                     end_time = time.time()
@@ -304,275 +326,68 @@ def schmidt(point_files, dimension, k, epsilon_values, u_values, num_radii_value
     results.sort(key=lambda x: (x[0], x[1], -x[2]))
 
     # Ergebnisse in eine CSV-Datei schreiben
-    with open(f'Data/{dimension}/{k}/Results/Schmidt/results.csv', 'w') as f:
+    with open(f'{result_directory}/results.csv', 'w') as f:
         f.write('Datei,u,epsilon,num_radii,Dauer (Sekunden),Summe_der_Radien\n')
         for point_file, u, epsilon, num_radii, duration, radii in results:
             f.write(f'{point_file},{u},{epsilon},{
                     num_radii},{duration},{radii}\n')
 
 
-def analyze_results_schmidt(dimension, k):
-    result_directory = f'Data/{dimension}/{k}/Results/Schmidt'
-
-    # Ergebnisse in einen DataFrame umwandeln
-    df = pd.read_csv(f'{result_directory}/results.csv')
+def analyze_results_FPT_Heuristic(dimensions, ks, seeds):
+    all_results = []
     
-    # Beste Kombination von u, epsilon und num_radii basierend auf dem kleinsten Durchschnitt der Radien
-    best_u, best_num_radii, best_epsilon = df.groupby(['u', 'num_radii', 'epsilon'])['Summe_der_Radien'].mean().idxmin()
+    # Alle Ergebnisse in einem DataFrame zusammenführen
+    for dimension in dimensions:
+        for k in ks:
+            for seed in seeds:
+                result_directory = f'Data4/Dimension={dimension}/k={k}/FPT_Heuristic/Seed={seed}/Results'
+                df = pd.read_csv(f'{result_directory}/results.csv')
+                df['Dimension'] = dimension
+                df['k'] = k 
+                df['seed'] = seed
+                all_results.append(df)
+    
+    combined_df = pd.concat(all_results)
 
-    analyse_u(df, best_u, best_num_radii, best_epsilon, result_directory)
+    # Berechne die besten Kombinationen für jede Dimension und jedes k
+    for dimension in dimensions:
+        for k in ks:
+            df_subset = combined_df[(combined_df['Dimension'] == dimension) & (combined_df['k'] == k)]
+            plot_directory = f'Data4/Dimension={dimension}/k={k}/FPT_Heuristic'
 
-    # Boxplots für konstantes u und variierendes epsilon
-    # for u_val in df['u'].unique():
-    #     df_u = df[df['u'] == u_val]
-    #     plt.figure(figsize=(10, 6))
-    #     df_u.boxplot(column='Summe_der_Radien', by='epsilon')
-    #     plt.title(f'Verteilung der Radien für u={u_val} und variierendes epsilon')
-    #     plt.suptitle('')
-    #     plt.xlabel('epsilon')
-    #     plt.ylabel('Summe_der_Radien')
-    #     plt.xticks(rotation=90)
-    #     plt.tight_layout()
-    #     plt.savefig(f'{result_directory}/radii_boxplot_u{u_val}.pdf')
-    #     plt.close()
+            mean_results = df_subset.groupby(['Datei', 'u', 'epsilon', 'num_radii']).agg({'Dauer (Sekunden)': 'mean', 'Summe_der_Radien': 'mean'}).reset_index()
+            
+            num_radii_results = mean_results.groupby('num_radii').agg({'Summe_der_Radien': 'mean'}).reset_index()
+            u_results = mean_results.groupby('u').agg({'Summe_der_Radien': 'mean'}).reset_index()
+            epsilon_results = mean_results.groupby('epsilon').agg({'Summe_der_Radien': 'mean'}).reset_index()
+            
 
-    # Boxplots für konstantes epsilon und variierendes u
-    # for epsilon_val in df['epsilon'].unique():
-    #     df_epsilon = df[df['epsilon'] == epsilon_val]
-    #     plt.figure(figsize=(10, 6))
-    #     df_epsilon.boxplot(column='Summe_der_Radien', by='u')
-    #     plt.title(f'Verteilung der Radien für epsilon={epsilon_val} und variierendes u')
-    #     plt.suptitle('')
-    #     plt.xlabel('u')
-    #     plt.ylabel('Summe_der_Radien')
-    #     plt.xticks(rotation=90)
-    #     plt.tight_layout()
-    #     plt.savefig(f'{result_directory}/radii_boxplot_epsilon{epsilon_val}.pdf')
-    #     plt.close()
+            best_num_radii = num_radii_results.loc[num_radii_results['Summe_der_Radien'].idxmin(), 'num_radii']
+            best_u = u_results.loc[u_results['Summe_der_Radien'].idxmin(), 'u']
+            best_epsilon = epsilon_results.loc[epsilon_results['Summe_der_Radien'].idxmin(), 'epsilon']
 
-    # Berechnung der Verbesserung des Radius
-    # min_u = min(df['u'])
-    # max_epsilon = max(df['epsilon'])
-    # min_num_radii = min(df['num_radii'])
-    # df_min = df[(df['u'] == min_u) & (df['epsilon'] == max_epsilon) & (df['num_radii'] == min_num_radii)]
-
-    # improvements = []
-    # for u in df['u'].unique():
-    #     for r in df['num_radii'].unique():
-    #         for epsilon in df['epsilon'].unique():
-    #             if u != min_u or epsilon != max_epsilon or r != min_num_radii:
-    #                 df_u_num_radii_epsilon = df[(df['u'] == u) & (df['num_radii'] == r) & (df['epsilon'] == epsilon)]
-    #                 merged = pd.merge(df_min, df_u_num_radii_epsilon, on='Datei', suffixes=('_min', f'_u{u}_num_radii{r}_epsilon{epsilon}'))
-    #                 merged['improvement'] = (merged['Summe_der_Radien_min'] - merged[f'Summe_der_Radien_u{u}_num_radii{r}_epsilon{epsilon}']) / merged['Summe_der_Radien_min'] * 100
-    #                 improvements.append((u, r, epsilon, merged['improvement'].mean()))
-
-    # improvement_df = pd.DataFrame(improvements, columns=['u', 'num_radii', 'epsilon', 'Improvement (%)'])
-
-    # # Verbesserungen anzeigen
-    # print(f'Verbesserung des Radius im Vergleich zu u={min_u}, num_radii={min_num_radii} und epsilon={max_epsilon}:')
-    # print(improvement_df)
-
-    # # Verbesserungen in eine CSV-Datei schreiben
-    # improvement_df.to_csv(f'Data/{dimension}/{k}/Results/Schmidt/radius_improvement.csv', index=False)
-
-    best_mean_radius = df[(df['u'] == best_u) & (df['num_radii'] == best_num_radii) & (df['epsilon'] == best_epsilon)]['Summe_der_Radien'].mean()
-    print(f'Die beste Kombination ist u={best_u}, num_radii={best_num_radii} und epsilon={best_epsilon} mit dem kleinsten durchschnittlichen Radius={best_mean_radius:.6f}.')
-
-    # Boxplot der Radien nach num_radiis für best_u und best_epsilon
-    plt.figure(figsize=(10, 6))
-    df_best = df[(df['u'] == best_u) & (df['epsilon'] == best_epsilon)]
-    df_best.boxplot(column='Summe_der_Radien', by='num_radii')
-    plt.title(f'Verteilung der Radien nach Anzahl der Radien (bestes u={best_u}, bestes epsilon={best_epsilon})')
-    plt.suptitle('')
-    plt.xlabel('num_radii')
-    plt.ylabel('Summe_der_Radien')
-    plt.xticks(rotation=90)
-    plt.tight_layout()
-    plt.savefig(f'{result_directory}/num_radii_boxplot.pdf')
-    plt.close()
-
-    # Markdown-Datei erstellen und Ergebnisse formatieren
-    # with open(f'{result_directory}/radius_improvement.md', 'w') as md_file:
-    #     md_file.write('# Verbesserung des Radius\n')
-    #     md_file.write(f'Vergleich der Verbesserungen des Radius im Vergleich zu u={min_u}, num_radii={min_num_radii} und epsilon={max_epsilon}:\n\n')
-    #     md_file.write('| u | num_radii | epsilon | Improvement (%) |\n')
-    #     md_file.write('|---|---------------|---------|-----------------|\n')
-    #     for row in improvements:
-    #         md_file.write(f'| {row[0]} | {row[1]} | {row[2]} | {row[3]:.2f} |\n')
-    #     md_file.write('\n')
-    #     md_file.write(f'Die beste Kombination ist u={best_u}, num_radii={best_num_radii} und epsilon={best_epsilon} mit dem kleinsten durchschnittlichen Radius={best_mean_radius:.6f}.\n')
+            if dimension == 2:
+                if k == 3:
+                    print(num_radii_results)
+                    print(u_results)
+                    print(epsilon_results)
 
 
-def compare_algorithms(dimension, k):
-    # Lade die Ergebnisse
-    schmidt_results = pd.read_csv(f'Data/{dimension}/{k}/Results/Schmidt/results.csv')
-    gonzales_results = pd.read_csv(f'Data/{dimension}/{k}/Results/Gonzales/results.csv')
-    kmeans_results = pd.read_csv(f'Data/{dimension}/{k}/Results/KMeansPlusPlus/results.csv')
-    heuristik_results = pd.read_csv(f'Data/{dimension}/{k}/Results/Heuristik/results.csv')
 
-    # Beste Kombination von u, num_radii und epsilon basierend auf dem kleinsten Durchschnitt der Radien
-    best_u, best_num_radii, best_epsilon = schmidt_results.groupby(['u', 'num_radii', 'epsilon'])['Summe_der_Radien'].mean().idxmin()
+            analyse_u(mean_results, best_num_radii, best_epsilon, plot_directory, dimension, k)   
+            analyze_num_radii(mean_results, best_u, best_epsilon, plot_directory, dimension, k)   
+            analyze_epsilon(mean_results, best_u, best_num_radii, plot_directory, dimension, k)     
 
-    # Berechnen der Durchschnittswerte der Radien für jeden Algorithmus
-    best_schmidt_avg_radius = schmidt_results[(schmidt_results['u'] == best_u) & (schmidt_results['num_radii'] == best_num_radii) & (schmidt_results['epsilon'] == best_epsilon)]['Summe_der_Radien'].mean()
-    gonzales_avg_radius = gonzales_results['Summe_der_Radien'].mean()
-    kmeans_avg_radius = kmeans_results['Summe_der_Radien'].mean()
-    heuristik_avg_radius = heuristik_results['Summe_der_Radien'].mean()
-
-    # Anzeigen der Durchschnittswerte
-    print(f'Durchschnittlicher Radius für Schmidt: {
-          best_schmidt_avg_radius:.6f}')
-    print(f'Durchschnittlicher Radius für Gonzales: {gonzales_avg_radius:.6f}')
-    print(f'Durchschnittlicher Radius für KMeans++: {kmeans_avg_radius:.6f}')
-    print(f'Durchschnittlicher Radius für Heuristik: {
-          heuristik_avg_radius:.6f}')
-
-    all_comparison_results = []
-    worse_schmidt_points = []
-    # Schleife über alle Kombinationen von u und epsilon
-    for u_val in schmidt_results['u'].unique():
-        for num_radii_val in schmidt_results['num_radii'].unique():
-            for epsilon_val in schmidt_results['epsilon'].unique():
-
-                # Zusammensetzen der Dataframes
-                paired_results = pd.merge(
-                    schmidt_results[(schmidt_results['u'] == u_val) & (schmidt_results['num_radii'] == num_radii_val) & (
-                        schmidt_results['epsilon'] == epsilon_val)][['Datei', 'Summe_der_Radien']],
-                    gonzales_results[['Datei', 'Summe_der_Radien']], on='Datei', suffixes=('_Schmidt', '_Gonzales'))
-
-                paired_results = pd.merge(paired_results, kmeans_results[[
-                                          'Datei', 'Summe_der_Radien']], on='Datei')
-                paired_results.rename(
-                    columns={'Summe_der_Radien': 'Summe_der_Radien_KMeans'}, inplace=True)
-                paired_results = pd.merge(paired_results, heuristik_results[[
-                                          'Datei', 'Summe_der_Radien']], on='Datei')
-                paired_results.rename(
-                    columns={'Summe_der_Radien': 'Summe_der_Radien_Heuristik'}, inplace=True)
-
-                # Runden der Radien
-                paired_results['Summe_der_Radien_Schmidt'] = paired_results['Summe_der_Radien_Schmidt'].round(
-                    7)
-                paired_results['Summe_der_Radien_Gonzales'] = paired_results['Summe_der_Radien_Gonzales'].round(
-                    7)
-                paired_results['Summe_der_Radien_KMeans'] = paired_results['Summe_der_Radien_KMeans'].round(
-                    7)
-                paired_results['Summe_der_Radien_Heuristik'] = paired_results['Summe_der_Radien_Heuristik'].round(
-                    7)
-
-                # Zählen, wie oft Schmidt besser als alle anderen ist
-                paired_results['Schmidt_better_than_all'] = paired_results.apply(
-                    lambda row: row['Summe_der_Radien_Schmidt'] < row[[
-                        'Summe_der_Radien_Gonzales', 'Summe_der_Radien_KMeans', 'Summe_der_Radien_Heuristik']].min(),
-                    axis=1
-                )
-
-                # Zählen, wie oft Schmidt schlechter als alle anderen ist
-                paired_results['Schmidt_worse_than_all'] = paired_results.apply(
-                    lambda row: row['Summe_der_Radien_Schmidt'] > row[[
-                        'Summe_der_Radien_Gonzales', 'Summe_der_Radien_KMeans', 'Summe_der_Radien_Heuristik']].max(),
-                    axis=1
-                )
-                schmidt_better_count = paired_results['Schmidt_better_than_all'].sum(
-                )
-                schmidt_worse_count = paired_results['Schmidt_worse_than_all'].sum(
-                )
-
-                # Zählt wie oft Schmidt besser ist als Gonzales
-                schmidt_vs_gonzales_better = (
-                    paired_results['Summe_der_Radien_Schmidt'] < paired_results['Summe_der_Radien_Gonzales']).sum()
-
-                # Zählt wie oft Schmidt schlechter ist als Gonzales
-                schmidt_vs_gonzales_worse = (
-                    paired_results['Summe_der_Radien_Schmidt'] > paired_results['Summe_der_Radien_Gonzales']).sum()
-
-                # Zählt wie oft Schmidt besser ist als KMeans++
-                schmidt_vs_kmeans_better = (
-                    paired_results['Summe_der_Radien_Schmidt'] < paired_results['Summe_der_Radien_KMeans']).sum()
-
-                # Zählt wie oft Schmidt schlechter ist als KMeans++
-                schmidt_vs_kmeans_worse = (
-                    paired_results['Summe_der_Radien_Schmidt'] > paired_results['Summe_der_Radien_KMeans']).sum()
-
-                # Zählt wie oft Schmidt besser ist als die Heuristik
-                schmidt_vs_heuristik_better = (
-                    paired_results['Summe_der_Radien_Schmidt'] < paired_results['Summe_der_Radien_Heuristik']).sum()
-
-                # Zählt wie oft Schmidt schlechter ist als die Heuristik
-                schmidt_vs_heuristik_worse = (
-                    paired_results['Summe_der_Radien_Schmidt'] > paired_results['Summe_der_Radien_Heuristik']).sum()
-
-                total_count = paired_results.shape[0]
-
-                schmidt_better_percentage = (
-                    schmidt_better_count / total_count) * 100
-                schmidt_worse_percentage = (
-                    schmidt_worse_count / total_count) * 100
-
-                schmidt_vs_gonzales_better_percentage = (
-                    schmidt_vs_gonzales_better / total_count) * 100
-                schmidt_vs_gonzales_worse_percentage = (
-                    schmidt_vs_gonzales_worse / total_count) * 100
-
-                schmidt_vs_kmeans_better_percentage = (
-                    schmidt_vs_kmeans_better / total_count) * 100
-                schmidt_vs_kmeans_worse_percentage = (
-                    schmidt_vs_kmeans_worse / total_count) * 100
-
-                schmidt_vs_heuristik_better_percentage = (
-                    schmidt_vs_heuristik_better / total_count) * 100
-                schmidt_vs_heuristik_worse_percentage = (
-                    schmidt_vs_heuristik_worse / total_count) * 100
-
-                # Ergebnisse sammeln
-                all_comparison_results.append({
-                    'u': u_val,
-                    'epsilon': epsilon_val,
-                    'num_radii': num_radii_val,
-                    'Schmidt vs Alle Besser (%)': schmidt_better_percentage,
-                    'Schmidt vs Alle Schlechter (%)': schmidt_worse_percentage,
-                    'Schmidt vs Gonzales Besser (%)': schmidt_vs_gonzales_better_percentage,
-                    'Schmidt vs Gonzales Schlechter (%)': schmidt_vs_gonzales_worse_percentage,
-                    'Schmidt vs KMeans++ Besser (%)': schmidt_vs_kmeans_better_percentage,
-                    'Schmidt vs KMeans++ Schlechter (%)': schmidt_vs_kmeans_worse_percentage,
-                    'Schmidt vs Heuristik Besser (%)': schmidt_vs_heuristik_better_percentage,
-                    'Schmidt vs Heuristik Schlechter (%)': schmidt_vs_heuristik_worse_percentage
-                })
-
-                # Speichern der Dateien, bei denen Schmidt schlechter als alle anderen ist
-                if u_val == best_u and epsilon_val == best_epsilon and num_radii_val == best_num_radii:
-                    worse_files = paired_results[paired_results['Schmidt_worse_than_all'] == True]['Datei'].tolist(
-                    )
-                    worse_schmidt_points.extend(worse_files)
-
-    # Ergebnisse in ein DataFrame packen
-    comparison_df = pd.DataFrame(all_comparison_results)
-
-    # Ergebnisse als Tabelle speichern
-    comparison_df.to_csv(
-        f'Data/{dimension}/{k}/Results/comparison_all_us_epsilons.csv', index=False)
-
-    # Markdown-Datei erstellen
-    with open(f'Data/{dimension}/{k}/Results/comparison_all_us_epsilons.md', 'w') as md_file:
-        md_file.write(
-            '# Paarweiser Vergleich der Clustering-Algorithmen für alle u- und epsilon-Werte\n\n')
-        md_file.write('| u  | epsilon | num_radii | Schmidt vs Alle Besser (%) | Schmidt vs Alle Schlechter (%) | Schmidt vs Gonzales Besser (%) | Schmidt vs Gonzales Schlechter (%) | Schmidt vs KMeans++ Besser (%) | Schmidt vs KMeans++ Schlechter (%) | Schmidt vs Heuristik Besser (%) | Schmidt vs Heuristik Schlechter (%) |\n')
-        md_file.write('|----|---------|---------------|----------------------------|--------------------------------|--------------------------------|------------------------------------|--------------------------------|------------------------------------|---------------------------------|-------------------------------------|\n')
-        for _, row in comparison_df.iterrows():
-            md_file.write(f'| {int(row['u'])} | {row['epsilon']} | {int(row['num_radii'])} |{row['Schmidt vs Alle Besser (%)']:.2f} | {row['Schmidt vs Alle Schlechter (%)']:.2f} | {row['Schmidt vs Gonzales Besser (%)']:.2f} | {row['Schmidt vs Gonzales Schlechter (%)']:.2f} | {
-                          row['Schmidt vs KMeans++ Besser (%)']:.2f} | {row['Schmidt vs KMeans++ Schlechter (%)']:.2f} | {row['Schmidt vs Heuristik Besser (%)']:.2f} | {row['Schmidt vs Heuristik Schlechter (%)']:.2f} |\n')
-
-    # Speichern der Dateien, bei denen Schmidt schlechter als alle anderen ist
-    with open(f'Data/{dimension}/{k}/Results/Schmidt/worse_schmidt_points.md', 'w') as md_file:
-        md_file.write(f'u: {best_u}, num_radii: {
-                      best_num_radii}, epsilon: {best_epsilon}\n')
-        md_file.write('Dateien:\n')
-        for datei in worse_schmidt_points:
-            md_file.write(f'{datei}\n')
-        md_file.write('\n')
+    # Speichern der zusammengeführten Ergebnisse
+    combined_df.to_csv('Data4/combined_results_FPT_Heuristic.csv', index=False)
 
 
-def analyse_u(df, best_u, best_num_radii, best_epsilon, output_directory):
+def analyse_u(df, best_num_radii, best_epsilon, output_directory, dimension, k):
     best_df = df[(df['num_radii'] == best_num_radii) & (df['epsilon'] == best_epsilon)]
+
+    # if dimension == 3:
+    #             if k == 3:
+    #                 print(best_df.head(330))
 
     duration_stats = best_df.groupby('u').agg(
         mean_duration=('Dauer (Sekunden)', 'mean'),
@@ -590,54 +405,75 @@ def analyse_u(df, best_u, best_num_radii, best_epsilon, output_directory):
         max_sum=('Summe_der_Radien', 'max')
     ).reset_index()
 
-    # Boxplot der Dauer der Durchläufe nach 'u'
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(12, 8))
     best_df.boxplot(column='Dauer (Sekunden)', by='u')
-    plt.title('Verteilung der Dauer nach u')
+    plt.title(f'Laufzeit nach u\n(num_radii={best_num_radii}, epsilon={best_epsilon}, Dimension={dimension}, k={k})', fontsize=14, pad=20)
     plt.suptitle('')
-    plt.xlabel('u')
-    plt.ylabel('Dauer (Sekunden)')
-    plt.xticks(rotation=90)
-    plt.tight_layout()
-    plt.savefig(f'{output_directory}/u_duration_boxplot.pdf')
-    plt.close()
+    plt.xlabel('u', fontsize=12)
+    plt.ylabel('Dauer (Sekunden)', fontsize=12)
+    plt.xticks(rotation=45, fontsize=10)
+    plt.yticks(fontsize=10)
+    plt.tight_layout(pad=2.0)
+    plt.savefig(f'{output_directory}/u_runtime_boxplot.pdf')
+    plt.close('all')
 
-    # Boxplot der Summe der Radien nach 'u'
-    plt.figure(figsize=(10, 6))
+    # Erstellen des Liniendiagramms
+    plt.figure(figsize=(12, 8))
+    line_data = best_df.groupby('u').agg(
+        avg_dauer=('Dauer (Sekunden)', 'mean')
+    ).reset_index()
+    plt.plot(line_data['u'], line_data['avg_dauer'], marker='o', linestyle='-', color='b')
+    plt.title(f'Laufzeit nach u\n(num_radii={best_num_radii}, epsilon={best_epsilon}, Dimension={dimension}, k={k})', fontsize=14, pad=20)
+    plt.xlabel('u', fontsize=12)
+    plt.ylabel('Dauer (Sekunden)', fontsize=12)
+    plt.xticks(line_data['u'], rotation=45, fontsize=10)
+    plt.yticks(fontsize=10)
+    plt.tight_layout(pad=2.0)
+    plt.savefig(f'{output_directory}/u_runtime_lineplot.pdf')
+    plt.close('all')
+
+    plt.figure(figsize=(12, 8))
     best_df.boxplot(column='Summe_der_Radien', by='u')
-    plt.title('Verteilung der Summe der Radien nach u')
+    plt.title(f'Verteilung der Summe der Radien nach Anzahl von u\n (num_radii={best_num_radii}, epsilon={best_epsilon}, Dimension={dimension}, k={k})', fontsize=14, pad=20)
     plt.suptitle('')
-    plt.xlabel('u')
-    plt.ylabel('Summe der Radien')
-    plt.xticks(rotation=90)
-    plt.tight_layout()
-    plt.savefig(f'{output_directory}/u_summe_der_radien_boxplot.pdf')
-    plt.close()
+    plt.xlabel('u', fontsize=12)
+    plt.ylabel('Summe_der_Radien', fontsize=12)
+    plt.xticks(rotation=45, fontsize=10)
+    plt.yticks(fontsize=10)
+    plt.tight_layout(pad=2.0)
+    plt.savefig(f'{output_directory}/u_sum_of_radii_boxplot.pdf')
+    plt.close('all') 
 
-    min_u = min(df['u'])
+    # Bestimmen des minimalen u-Werts
+    min_u = best_df['u'].min()
     min_df = best_df[best_df['u'] == min_u]
+
+    # Liste zur Speicherung der Verbesserungen
     improvements = []
+
+    # Iteration über alle einzigartigen u-Werte in best_df
     for u in best_df['u'].unique():
-        if u != min_u :
-            df_u= best_df[(best_df['u'] == u)]
-            merged = pd.merge(min_df, df_u, on='Datei', suffixes=('_min', f'_u{u}'))
+        if u != min_u:
+            df_u = best_df[best_df['u'] == u]
+            merged = pd.merge(min_df, df_u, on=['epsilon', 'num_radii'], suffixes=('_min', f'_u{u}'))
             merged['improvement'] = (merged['Summe_der_Radien_min'] - merged[f'Summe_der_Radien_u{u}']) / merged['Summe_der_Radien_min'] * 100
-            improvements.append((u, merged['improvement'].mean()))
-    
-    improvement_df = pd.DataFrame(improvements, columns=['u', 'Improvement (%)'])
+            avg_radius = merged[f'Summe_der_Radien_u{u}'].mean()  # Durchschnittliche Summe der Radien für den aktuellen u
+            improvements.append((u, merged['improvement'].mean(), avg_radius))
+
+    improvement_df = pd.DataFrame(improvements, columns=['u', 'Improvement (%)', 'Durchschnitt der Summe der Radien'])
 
     # Verbesserungen anzeigen
-    print(f'Verbesserung des Radius im Vergleich zu u={min_u}:')
-    print(improvement_df)
+    # print(f'Verbesserung des Radius im Vergleich zu u={min_u}:')
+    # print(improvement_df)
 
     # Markdown-Datei erstellen und Ergebnisse formatieren
-    with open(f'{output_directory}/radius_improvement.md', 'w') as md_file:
+    with open(f'{output_directory}/u_radius_improvement.md', 'w') as md_file:
         md_file.write('# Verbesserung des Radius\n')
         md_file.write(f'Vergleich der Verbesserungen des Radius im Vergleich zu u={min_u}:\n\n')
-        md_file.write('| u | Improvement (%) |\n')
-        md_file.write('|---|-----------------|\n')
+        md_file.write('| u | Improvement (%) | Druchschnitt der Summe der Radien |\n')
+        md_file.write('|---|-----------------|-----------------------------------|\n')
         for row in improvements:
-            md_file.write(f'| {row[0]} | {row[1]:.2f} |\n')
+            md_file.write(f'| {row[0]} | {row[1]:.2f} | {row[2]:.6f} |\n')
         md_file.write('\n')
 
 
@@ -653,12 +489,11 @@ def analyse_u(df, best_u, best_num_radii, best_epsilon, output_directory):
             '\\textit{u} & Mittelwert (Sek.) & Median (Sek.) & Standard-abweichung & Minimum (Sek.) & Maximum (Sek.) \\\\ \\hline\n')
 
         for _, row in duration_stats.iterrows():
-            f.write(f'{int(row['u'])} & {row['mean_duration']:.4f} & {row['median_duration']:.4f} & {
-                    row['std_duration']:.4f} & {row['min_duration']:.4f} & {row['max_duration']:.4f} \\\\ \\hline\n')
+            f.write(f'{int(row["u"])} & {row["mean_duration"]:.4f} & {row["median_duration"]:.4f} & {row["std_duration"]:.4f} & {row["min_duration"]:.4f} & {row["max_duration"]:.4f} \\\\ \\hline\n')
 
         f.write('\\end{tabularx}\n')
         f.write(
-            '\\caption{Statistische Zusammenfassung der Laufzeit für verschiedene Werte von \\textit{u}.}\n')
+            f'\\caption{{Statistische Zusammenfassung der Laufzeit für verschiedene Werte von \\textit{{u}} (num\\_radii={best_num_radii}, epsilon={best_epsilon}, Dimension={dimension}, k={k}).}}\n')
         f.write('\\label{tab:stats_u}\n')
         f.write('\\end{table}\n')
         f.write('\n')
@@ -671,59 +506,436 @@ def analyse_u(df, best_u, best_num_radii, best_epsilon, output_directory):
             '\\textit{u} & Mittelwert & Median & Standard-abweichung & Minimum & Maximum \\\\ \\hline\n')
 
         for _, row in sum_of_radii_stats.iterrows():
-            f.write(f'{int(row['u'])} & {row['mean_sum']:.4f} & {row['median_sum']:.4f} & {
-                    row['std_sum']:.4f} & {row['min_sum']:.4f} & {row['max_sum']:.4f} \\\\ \\hline\n')
+            f.write(f'{int(row["u"])} & {row["mean_sum"]:.4f} & {row["median_sum"]:.4f} & {row["std_sum"]:.4f} & {row["min_sum"]:.4f} & {row["max_sum"]:.4f} \\\\ \\hline\n')
 
         f.write('\\end{tabularx}\n')
         f.write(
-            '\\caption{Statistische Zusammenfassung der Summe der Radien für verschiedene Werte von \\textit{u}.}\n')
+            f'\\caption{{Statistische Zusammenfassung der Summe der Radien für verschiedene Werte von \\textit{{u}} (num\\_radii={best_num_radii}, epsilon={best_epsilon}, Dimension={dimension}, k={k}).}}\n')
         f.write('\\label{tab:summe_der_radien_u}\n')
         f.write('\\end{table}\n')
 
 
+def analyze_num_radii(df, best_u, best_epsilon, output_directory, dimension, k):
+    best_df = df[(df['u'] == best_u) & (df['epsilon'] == best_epsilon)]
 
-def main(config):
-    dimensions = [2, 3,]
-    ks = [3, 4, 5]
-    epsilon_values = [0.5]
-    u_values = [1, 10, 100, 1000]
-    num_radii_values = [5]
+    duration_stats = best_df.groupby('num_radii').agg(
+        mean_duration=('Dauer (Sekunden)', 'mean'),
+        median_duration=('Dauer (Sekunden)', 'median'),
+        std_duration=('Dauer (Sekunden)', 'std'),
+        min_duration=('Dauer (Sekunden)', 'min'),
+        max_duration=('Dauer (Sekunden)', 'max')
+    ).reset_index()
 
+    sum_of_radii_stats = best_df.groupby('num_radii').agg(
+        mean_sum=('Summe_der_Radien', 'mean'),
+        median_sum=('Summe_der_Radien', 'median'),
+        std_sum=('Summe_der_Radien', 'std'),
+        min_sum=('Summe_der_Radien', 'min'),
+        max_sum=('Summe_der_Radien', 'max')
+    ).reset_index()
+
+    plt.figure(figsize=(12, 8))
+    best_df.boxplot(column='Dauer (Sekunden)', by='num_radii')
+    plt.title(f'Laufzeit nach num_radii\n(u={best_u}, epsilon={best_epsilon}, Dimension={dimension}, k={k})', fontsize=14, pad=20)
+    plt.suptitle('')
+    plt.xlabel('num_radii', fontsize=12)
+    plt.ylabel('Dauer (Sekunden)', fontsize=12)
+    plt.xticks(rotation=45, fontsize=10)
+    plt.yticks(fontsize=10)
+    plt.tight_layout(pad=2.0)
+    plt.savefig(f'{output_directory}/num_radii_runtime_boxplot.pdf')
+    plt.close('all')
+
+    plt.figure(figsize=(12, 8))
+    best_df.boxplot(column='Summe_der_Radien', by='num_radii')
+    plt.title(f'Verteilung der Summe der Radien nach Anzahl von num_radii\n (u={best_u}, epsilon={best_epsilon}, Dimension={dimension}, k={k})', fontsize=14, pad=20)
+    plt.suptitle('')
+    plt.xlabel('num_radii', fontsize=12)
+    plt.ylabel('Summe_der_Radien', fontsize=12)
+    plt.xticks(rotation=45, fontsize=10)
+    plt.yticks(fontsize=10)
+    plt.tight_layout(pad=2.0)
+    plt.savefig(f'{output_directory}/num_radii_sum_of_radii_boxplot.pdf')
+    plt.close('all') 
+
+    # Erstellen des Liniendiagramms
+    plt.figure(figsize=(12, 8))
+    line_data = best_df.groupby('num_radii').agg(
+        avg_dauer=('Dauer (Sekunden)', 'mean')
+    ).reset_index()
+    plt.plot(line_data['num_radii'], line_data['avg_dauer'], marker='o', linestyle='-', color='b')
+    plt.title(f'Laufzeit nach num_radii\n(u={best_u}, epsilon={best_epsilon}, Dimension={dimension}, k={k})', fontsize=14, pad=20)
+    plt.xlabel('num_radii', fontsize=12)
+    plt.ylabel('Dauer (Sekunden)', fontsize=12)
+    plt.xticks(line_data['num_radii'], fontsize=10)
+    plt.yticks(fontsize=10)
+    plt.tight_layout(pad=2.0)
+    plt.savefig(f'{output_directory}/num_radii_runtime_lineplot.pdf')
+    plt.close('all')
+
+    min_num_radii = min(df['num_radii'])
+    min_df = best_df[best_df['num_radii'] == min_num_radii]
+    improvements = []
+    for num_radii in best_df['num_radii'].unique():
+        if num_radii != min_num_radii:
+            df_num_radii = best_df[(best_df['num_radii'] == num_radii)]
+            merged = pd.merge(min_df, df_num_radii, on='Datei', suffixes=('_min', f'_num_radii{num_radii}'))
+            merged['improvement'] = (merged['Summe_der_Radien_min'] - merged[f'Summe_der_Radien_num_radii{num_radii}']) / merged['Summe_der_Radien_min'] * 100
+            avg_radius = merged[f'Summe_der_Radien_num_radii{num_radii}'].mean()  # Durchschnittliche Summe der Radien für den aktuellen u
+            improvements.append((num_radii, merged['improvement'].mean(), avg_radius))
+
+    improvement_df = pd.DataFrame(improvements, columns=['num_radii', 'Improvement (%)', 'Durchschnitt der Summe der Radien'])
+
+    # # Verbesserungen anzeigen
+    # print(f'Verbesserung des Radius im Vergleich zu num_radii={min_num_radii}:')
+    # print(improvement_df)
+
+    # Markdown-Datei erstellen und Ergebnisse formatieren
+    with open(f'{output_directory}/num_radii_radius_improvement.md', 'w') as md_file:
+        md_file.write('# Verbesserung des Radius\n')
+        md_file.write(f'Vergleich der Verbesserungen des Radius im Vergleich zu num_radii={min_num_radii}:\n\n')
+        md_file.write('| num_radii | Improvement (%) | Druchschnitt der Summe der Radien |\n')
+        md_file.write('|-----------|-----------------|-----------------------------------|\n')
+        for row in improvements:
+            md_file.write(f'| {row[0]} | {row[1]:.2f} | {row[2]:.6f} |\n')
+        md_file.write('\n')
+
+    tex_file = f'{output_directory}/num_radii.tex'
+
+    with open(tex_file, 'w') as f:
+        f.write('\\begin{table}[H]\n')
+        f.write('\\centering\n')
+        f.write('\\begin{tabularx}{\\textwidth}{|X|X|X|X|X|X|}\n')
+        f.write('\\hline\n')
+        f.write(
+            '\\textit{num\\_radii} & Mittelwert (Sek.) & Median (Sek.) & Standard-abweichung & Minimum (Sek.) & Maximum (Sek.) \\\\ \\hline\n')
+
+        for _, row in duration_stats.iterrows():
+            f.write(f'{int(row['num_radii'])} & {row['mean_duration']:.4f} & {row['median_duration']:.4f} & {
+                    row['std_duration']:.4f} & {row['min_duration']:.4f} & {row['max_duration']:.4f} \\\\ \\hline\n')
+
+        f.write('\\end{tabularx}\n')
+        f.write(
+            f'\\caption{{Statistische Zusammenfassung der Laufzeit für verschiedene Werte von \\textit{{num\\_radii}} (u={best_u}, epsilon={best_epsilon}, Dimension={dimension}, k={k}).}}\n')
+        f.write('\\label{tab:stats_num_radii}\n')
+        f.write('\\end{table}\n')
+        f.write('\n')
+
+        f.write('\\begin{table}[H]\n')
+        f.write('\\centering\n')
+        f.write('\\begin{tabularx}{\\textwidth}{|X|X|X|X|X|X|}\n')
+        f.write('\\hline\n')
+        f.write(
+            '\\textit{num\\_radii} & Mittelwert & Median & Standard-abweichung & Minimum & Maximum \\\\ \\hline\n')
+
+        for _, row in sum_of_radii_stats.iterrows():
+            f.write(f'{int(row['num_radii'])} & {row['mean_sum']:.4f} & {row['median_sum']:.4f} & {
+                    row['std_sum']:.4f} & {row['min_sum']:.4f} & {row['max_sum']:.4f} \\\\ \\hline\n')
+
+        f.write('\\end{tabularx}\n')
+        f.write(
+            '\\caption{Statistische Zusammenfassung der Summe der Radien für verschiedene Werte von \\textit{num\\_radii}.}\n')
+        f.write('\\label{tab:summe_der_radien_num_radii}\n')
+        f.write('\\end{table}\n')
+
+
+def analyze_epsilon(df, best_u, best_num_radii, output_directory, dimension, k):
+    best_df = df[(df['u'] == best_u) & (df['num_radii'] == best_num_radii)]
+
+    duration_stats = best_df.groupby('epsilon').agg(
+        mean_duration=('Dauer (Sekunden)', 'mean'),
+        median_duration=('Dauer (Sekunden)', 'median'),
+        std_duration=('Dauer (Sekunden)', 'std'),
+        min_duration=('Dauer (Sekunden)', 'min'),
+        max_duration=('Dauer (Sekunden)', 'max')
+    ).reset_index()
+
+    sum_of_radii_stats = best_df.groupby('epsilon').agg(
+        mean_sum=('Summe_der_Radien', 'mean'),
+        median_sum=('Summe_der_Radien', 'median'),
+        std_sum=('Summe_der_Radien', 'std'),
+        min_sum=('Summe_der_Radien', 'min'),
+        max_sum=('Summe_der_Radien', 'max')
+    ).reset_index()
+
+    plt.figure(figsize=(12, 8))
+    best_df.boxplot(column='Dauer (Sekunden)', by='epsilon')
+    plt.title(f'Laufzeit nach epsilon\n(u={best_u}, num_radii={best_num_radii}, Dimension={dimension}, k={k})', fontsize=14, pad=20)
+    plt.suptitle('')
+    plt.xlabel('epilon', fontsize=12)
+    plt.ylabel('Dauer (Sekunden)', fontsize=12)
+    plt.xticks(rotation=45, fontsize=10)
+    plt.yticks(fontsize=10)
+    plt.tight_layout(pad=2.0)
+    plt.savefig(f'{output_directory}/epsilon_runtime_boxplot.pdf')
+    plt.close('all')
+
+    plt.figure(figsize=(12, 8))
+    best_df.boxplot(column='Summe_der_Radien', by='epsilon')
+    plt.title(f'Verteilung der Summe der Radien nach epislon\n (u={best_u}, num_radii={best_num_radii}, Dimension={dimension}, k={k})', fontsize=14, pad=20)
+    plt.suptitle('')
+    plt.xlabel('epsilon', fontsize=12)
+    plt.ylabel('Summe_der_Radien', fontsize=12)
+    plt.xticks(rotation=45, fontsize=10)
+    plt.yticks(fontsize=10)
+    plt.tight_layout(pad=2.0)
+    plt.savefig(f'{output_directory}/epsilon_sum_of_radii_boxplot.pdf')
+    plt.close('all')
+
+def analyze_runtime_for_dimensions_and_k(df, dimensions, ks, best_u, best_num_radii, best_epsilon, output_directory):
+    # Filter für die besten Parameter
+    filtered_df = df[(df['u'] == best_u) & 
+                     (df['num_radii'] == best_num_radii) & 
+                     (df['epsilon'] == best_epsilon)]
+
+    runtime_stats = filtered_df.groupby(['Dimension', 'k']).agg(
+        mean_duration=('Dauer (Sekunden)', 'mean'),
+        median_duration=('Dauer (Sekunden)', 'median'),
+        std_duration=('Dauer (Sekunden)', 'std'),
+        min_duration=('Dauer (Sekunden)', 'min'),
+        max_duration=('Dauer (Sekunden)', 'max')
+    ).reset_index()
+
+    plt.figure(figsize=(14, 10))
+    for dimension in dimensions:
+        subset = runtime_stats[runtime_stats['Dimension'] == dimension]
+        plt.plot(subset['k'], subset['mean_duration'], label=f'Dimension {dimension}', marker='o')
+
+    plt.title('Durchschnittliche Laufzeit für verschiedene Dimensionen und k', fontsize=16)
+    plt.xlabel('k', fontsize=14)
+    plt.xticks(ks)
+    plt.ylabel('Durchschnittliche Laufzeit (Sekunden)', fontsize=14)
+    plt.legend(title='Dimension')
+    plt.tight_layout()
+    plt.savefig(f'{output_directory}/runtime_dimension_k_plot.pdf')
+    plt.close('all')
+
+    # Detailierte Statistik für jede Kombination von Dimension und k
+    detailed_stats = []
+    for dimension in dimensions:
+        for k in ks:
+            subset = df[(df['Dimension'] == dimension) & (df['k'] == k)]
+            stats = subset['Dauer (Sekunden)'].describe().to_dict()
+            stats.update({'Dimension': dimension, 'k': k})
+            detailed_stats.append(stats)
+
+    detailed_stats_df = pd.DataFrame(detailed_stats)
+    detailed_stats_df.to_csv(f'{output_directory}/detailed_runtime_stats.csv', index=False)
+
+    print('Laufzeitanalyse abgeschlossen und Ergebnisse gespeichert.')
+
+
+def compare_algorithms(dimension, k, seed):
+    # Lade die Ergebnisse
+    FPT_Heuristic_results = pd.read_csv(f'Data/{dimension}/{k}/{seed}/Results/FPT_Heuristic/results.csv')
+    gonzalez_results = pd.read_csv(f'Data/{dimension}/{k}/{seed}/Results/Gonzalez/results.csv')
+    kmeans_results = pd.read_csv(f'Data/{dimension}/{k}/{seed}Results/KMeansPlusPlus/results.csv')
+    heuristik_results = pd.read_csv(f'Data/{dimension}/{k}/{seed}/Results/Heuristik/results.csv')
+
+    # Beste Kombination von u, num_radii und epsilon basierend auf dem kleinsten Durchschnitt der Radien
+    best_u, best_num_radii, best_epsilon = FPT_Heuristic_results.groupby(['u', 'num_radii', 'epsilon'])['Summe_der_Radien'].mean().idxmin()
+
+    # Berechnen der Durchschnittswerte der Radien für jeden Algorithmus
+    best_FPT_Heuristic_avg_radius = FPT_Heuristic_results[(FPT_Heuristic_results['u'] == best_u) & (FPT_Heuristic_results['num_radii'] == best_num_radii) & (FPT_Heuristic_results['epsilon'] == best_epsilon)]['Summe_der_Radien'].mean()
+    gonzalez_avg_radius = gonzalez_results['Summe_der_Radien'].mean()
+    kmeans_avg_radius = kmeans_results['Summe_der_Radien'].mean()
+    heuristik_avg_radius = heuristik_results['Summe_der_Radien'].mean()
+
+    # Anzeigen der Durchschnittswerte
+    print(f'Durchschnittlicher Radius für FPT_Heuristic: {
+          best_FPT_Heuristic_avg_radius:.6f}')
+    print(f'Durchschnittlicher Radius für Gonzalez: {gonzalez_avg_radius:.6f}')
+    print(f'Durchschnittlicher Radius für KMeans++: {kmeans_avg_radius:.6f}')
+    print(f'Durchschnittlicher Radius für Heuristik: {
+          heuristik_avg_radius:.6f}')
+
+    all_comparison_results = []
+    worse_FPT_Heuristic_points = []
+    # Schleife über alle Kombinationen von u und epsilon
+    for u_val in FPT_Heuristic_results['u'].unique():
+        for num_radii_val in FPT_Heuristic_results['num_radii'].unique():
+            for epsilon_val in FPT_Heuristic_results['epsilon'].unique():
+
+                # Zusammensetzen der Dataframes
+                paired_results = pd.merge(
+                    FPT_Heuristic_results[(FPT_Heuristic_results['u'] == u_val) & (FPT_Heuristic_results['num_radii'] == num_radii_val) & (
+                        FPT_Heuristic_results['epsilon'] == epsilon_val)][['Datei', 'Summe_der_Radien']],
+                    gonzalez_results[['Datei', 'Summe_der_Radien']], on='Datei', suffixes=('_FPT_Heuristic', '_Gonzalez'))
+
+                paired_results = pd.merge(paired_results, kmeans_results[[
+                                          'Datei', 'Summe_der_Radien']], on='Datei')
+                paired_results.rename(
+                    columns={'Summe_der_Radien': 'Summe_der_Radien_KMeans'}, inplace=True)
+                paired_results = pd.merge(paired_results, heuristik_results[[
+                                          'Datei', 'Summe_der_Radien']], on='Datei')
+                paired_results.rename(
+                    columns={'Summe_der_Radien': 'Summe_der_Radien_Heuristik'}, inplace=True)
+
+                # Runden der Radien
+                paired_results['Summe_der_Radien_FPT_Heuristic'] = paired_results['Summe_der_Radien_FPT_Heuristic'].round(
+                    7)
+                paired_results['Summe_der_Radien_Gonzalez'] = paired_results['Summe_der_Radien_Gonzalez'].round(
+                    7)
+                paired_results['Summe_der_Radien_KMeans'] = paired_results['Summe_der_Radien_KMeans'].round(
+                    7)
+                paired_results['Summe_der_Radien_Heuristik'] = paired_results['Summe_der_Radien_Heuristik'].round(
+                    7)
+
+                # Zählen, wie oft FPT_Heuristic besser als alle anderen ist
+                paired_results['FPT_Heuristic_better_than_all'] = paired_results.apply(
+                    lambda row: row['Summe_der_Radien_FPT_Heuristic'] < row[[
+                        'Summe_der_Radien_Gonzalez', 'Summe_der_Radien_KMeans', 'Summe_der_Radien_Heuristik']].min(),
+                    axis=1
+                )
+
+                # Zählen, wie oft FPT_Heuristic schlechter als alle anderen ist
+                paired_results['FPT_Heuristic_worse_than_all'] = paired_results.apply(
+                    lambda row: row['Summe_der_Radien_FPT_Heuristic'] > row[[
+                        'Summe_der_Radien_Gonzalez', 'Summe_der_Radien_KMeans', 'Summe_der_Radien_Heuristik']].max(),
+                    axis=1
+                )
+                FPT_Heuristic_better_count = paired_results['FPT_Heuristic_better_than_all'].sum(
+                )
+                FPT_Heuristic_worse_count = paired_results['FPT_Heuristic_worse_than_all'].sum(
+                )
+
+                # Zählt wie oft FPT_Heuristic besser ist als Gonzalez
+                FPT_Heuristic_vs_gonzalez_better = (
+                    paired_results['Summe_der_Radien_FPT_Heuristic'] < paired_results['Summe_der_Radien_Gonzalez']).sum()
+
+                # Zählt wie oft FPT_Heuristic schlechter ist als Gonzalez
+                FPT_Heuristic_vs_gonzalez_worse = (
+                    paired_results['Summe_der_Radien_FPT_Heuristic'] > paired_results['Summe_der_Radien_Gonzalez']).sum()
+
+                # Zählt wie oft FPT_Heuristic besser ist als KMeans++
+                FPT_Heuristic_vs_kmeans_better = (
+                    paired_results['Summe_der_Radien_FPT_Heuristic'] < paired_results['Summe_der_Radien_KMeans']).sum()
+
+                # Zählt wie oft FPT_Heuristic schlechter ist als KMeans++
+                FPT_Heuristic_vs_kmeans_worse = (
+                    paired_results['Summe_der_Radien_FPT_Heuristic'] > paired_results['Summe_der_Radien_KMeans']).sum()
+
+                # Zählt wie oft FPT_Heuristic besser ist als die Heuristik
+                FPT_Heuristic_vs_heuristik_better = (
+                    paired_results['Summe_der_Radien_FPT_Heuristic'] < paired_results['Summe_der_Radien_Heuristik']).sum()
+
+                # Zählt wie oft FPT_Heuristic schlechter ist als die Heuristik
+                FPT_Heuristic_vs_heuristik_worse = (
+                    paired_results['Summe_der_Radien_FPT_Heuristic'] > paired_results['Summe_der_Radien_Heuristik']).sum()
+
+                total_count = paired_results.shape[0]
+
+                FPT_Heuristic_better_percentage = (
+                    FPT_Heuristic_better_count / total_count) * 100
+                FPT_Heuristic_worse_percentage = (
+                    FPT_Heuristic_worse_count / total_count) * 100
+
+                FPT_Heuristic_vs_gonzalez_better_percentage = (
+                    FPT_Heuristic_vs_gonzalez_better / total_count) * 100
+                FPT_Heuristic_vs_gonzalez_worse_percentage = (
+                    FPT_Heuristic_vs_gonzalez_worse / total_count) * 100
+
+                FPT_Heuristic_vs_kmeans_better_percentage = (
+                    FPT_Heuristic_vs_kmeans_better / total_count) * 100
+                FPT_Heuristic_vs_kmeans_worse_percentage = (
+                    FPT_Heuristic_vs_kmeans_worse / total_count) * 100
+
+                FPT_Heuristic_vs_heuristik_better_percentage = (
+                    FPT_Heuristic_vs_heuristik_better / total_count) * 100
+                FPT_Heuristic_vs_heuristik_worse_percentage = (
+                    FPT_Heuristic_vs_heuristik_worse / total_count) * 100
+
+                # Ergebnisse sammeln
+                all_comparison_results.append({
+                    'u': u_val,
+                    'epsilon': epsilon_val,
+                    'num_radii': num_radii_val,
+                    'FPT_Heuristic vs Alle Besser (%)': FPT_Heuristic_better_percentage,
+                    'FPT_Heuristic vs Alle Schlechter (%)': FPT_Heuristic_worse_percentage,
+                    'FPT_Heuristic vs Gonzalez Besser (%)': FPT_Heuristic_vs_gonzalez_better_percentage,
+                    'FPT_Heuristic vs Gonzalez Schlechter (%)': FPT_Heuristic_vs_gonzalez_worse_percentage,
+                    'FPT_Heuristic vs KMeans++ Besser (%)': FPT_Heuristic_vs_kmeans_better_percentage,
+                    'FPT_Heuristic vs KMeans++ Schlechter (%)': FPT_Heuristic_vs_kmeans_worse_percentage,
+                    'FPT_Heuristic vs Heuristik Besser (%)': FPT_Heuristic_vs_heuristik_better_percentage,
+                    'FPT_Heuristic vs Heuristik Schlechter (%)': FPT_Heuristic_vs_heuristik_worse_percentage
+                })
+
+                # Speichern der Dateien, bei denen FPT_Heuristic schlechter als alle anderen ist
+                if u_val == best_u and epsilon_val == best_epsilon and num_radii_val == best_num_radii:
+                    worse_files = paired_results[paired_results['FPT_Heuristic_worse_than_all'] == True]['Datei'].tolist(
+                    )
+                    worse_FPT_Heuristic_points.extend(worse_files)
+
+    # Ergebnisse in ein DataFrame packen
+    comparison_df = pd.DataFrame(all_comparison_results)
+
+    # Ergebnisse als Tabelle speichern
+    comparison_df.to_csv(
+        f'Data/{dimension}/{k}/Results/comparison_all_us_epsilons.csv', index=False)
+
+    # Markdown-Datei erstellen
+    with open(f'Data/{dimension}/{k}/Results/comparison_all_us_epsilons.md', 'w') as md_file:
+        md_file.write(
+            '# Paarweiser Vergleich der Clustering-Algorithmen für alle u- und epsilon-Werte\n\n')
+        md_file.write('| u  | epsilon | num_radii | FPT_Heuristic vs Alle Besser (%) | FPT_Heuristic vs Alle Schlechter (%) | FPT_Heuristic vs Gonzalez Besser (%) | FPT_Heuristic vs Gonzalez Schlechter (%) | FPT_Heuristic vs KMeans++ Besser (%) | FPT_Heuristic vs KMeans++ Schlechter (%) | FPT_Heuristic vs Heuristik Besser (%) | FPT_Heuristic vs Heuristik Schlechter (%) |\n')
+        md_file.write('|----|---------|---------------|----------------------------|--------------------------------|--------------------------------|------------------------------------|--------------------------------|------------------------------------|---------------------------------|-------------------------------------|\n')
+        for _, row in comparison_df.iterrows():
+            md_file.write(f'| {int(row['u'])} | {row['epsilon']} | {int(row['num_radii'])} |{row['FPT_Heuristic vs Alle Besser (%)']:.2f} | {row['FPT_Heuristic vs Alle Schlechter (%)']:.2f} | {row['FPT_Heuristic vs Gonzalez Besser (%)']:.2f} | {row['FPT_Heuristic vs Gonzalez Schlechter (%)']:.2f} | {
+                          row['FPT_Heuristic vs KMeans++ Besser (%)']:.2f} | {row['FPT_Heuristic vs KMeans++ Schlechter (%)']:.2f} | {row['FPT_Heuristic vs Heuristik Besser (%)']:.2f} | {row['FPT_Heuristic vs Heuristik Schlechter (%)']:.2f} |\n')
+
+    # Speichern der Dateien, bei denen FPT_Heuristic schlechter als alle anderen ist
+    with open(f'Data/{dimension}/{k}/Results/FPT_Heuristic/worse_FPT_Heuristic_points.md', 'w') as md_file:
+        md_file.write(f'u: {best_u}, num_radii: {
+                      best_num_radii}, epsilon: {best_epsilon}\n')
+        md_file.write('Dateien:\n')
+        for datei in worse_FPT_Heuristic_points:
+            md_file.write(f'{datei}\n')
+        md_file.write('\n')
+
+
+def clustering(config, dimensions, ks, seeds, epsilon_values, u_values, num_radii_values, number_files):
     for dimension in dimensions:
         for k in ks:
             # Verzeichnisse definieren
-            directory = f'Data/{dimension}/{k}'
-            point_directory = os.path.join(directory, 'Points')
-            ball_directory = os.path.join(directory, 'Balls')
-            cluster_directory = os.path.join(directory, 'Cluster')
-            plot_directory = os.path.join(directory, 'Plots')
+            directory = f'Data/Dimension={dimension}/k={k}'
+            point_directory = f'{directory}/Points'
 
             # Überprüfen, ob die Punkte-Dateien existieren, andernfalls generieren
-            if not os.path.exists(os.path.join(point_directory, f'points_{config['number_files'] - 1}.csv')):
-                generator.generate_data(config, dimension, k)
+            if not os.path.exists(os.path.join(point_directory, f'points_{number_files - 1}.csv')):
+                generator.generate_data(config, dimension, k, number_files)
 
             # Liste der Punkte-Dateien im Verzeichnis
             point_files = [f for f in os.listdir(point_directory) if f.endswith('.csv')]
 
-            # Ausführung der Algorithmen
-            schmidt(point_files, dimension, k, epsilon_values, u_values, num_radii_values, ball_directory, cluster_directory, plot_directory, point_directory)
-            cluster(point_files, dimension, k, ball_directory, cluster_directory, plot_directory, point_directory, 'Gonzales', lib.gonzales_wrapper)
-            cluster(point_files, dimension, k, ball_directory, cluster_directory, plot_directory, point_directory, 'KMeansPlusPlus', lib.kmeans_wrapper)
-            cluster(point_files, dimension, k, ball_directory, cluster_directory, plot_directory, point_directory, 'Heuristik', lib.heuristic_wrapper)
+            for seed in seeds:
+        
+                # Ausführung der Algorithmen
+                FPT_Heuristic(point_files, dimension, k, epsilon_values, u_values, num_radii_values, directory, point_directory, seed)
+                cluster(point_files, dimension, k, directory, point_directory, 'Gonzalez', lib.gonzalez_wrapper, seed)
+                cluster(point_files, dimension, k, directory, point_directory, 'KMeansPlusPlus', lib.kmeans_wrapper, seed)
 
-            analyze_results_schmidt(dimension, k)
-            compare_algorithms(dimension, k)
+
+            cluster(point_files, dimension, k, directory, point_directory, 'Heuristik', lib.heuristic_wrapper, 1)
+
 
 
 if __name__ == '__main__':
+    epsilon_values = [0.5]
+    u_values = [1000]
+    num_radii_values = [1, 5, 10, 15, 20, 25]
+    number_files = 100
+    dimensions = range(2,3)
+    ks = range(3, 4)
+    seeds = range(5)
+
     # Argumente aus der Konfiguration holen
     config = generator.handle_arguments()
 
     # Clustering-Algorithmen ausführen
-    main(config)
+    # clustering(config, dimensions, ks, seeds, epsilon_values, u_values, num_radii_values, number_files)
 
-    # Analyse und Vergleich der Ergebnisse von Schmidt
-    #analyze_results_schmidt()
+    # Analyse und Vergleich der Ergebnisse von FPT_Heuristic
+    analyze_results_FPT_Heuristic(dimensions, ks, seeds)
 
     # Vergleich der Ergebnisse der verschiedenen Algorithmen
     #compare_algorithms()
