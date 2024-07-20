@@ -4,7 +4,7 @@
 
 #include <random>
 
-#include "header/gonzales.h"
+#include "header/gonzalez.h"
 #include "header/heuristic.h"
 #include "header/util.h"
 #include "header/yildirim.h"
@@ -167,7 +167,7 @@ vector<Ball> selection(const vector<Point> &points, int k, const vector<int> &u,
 vector<Cluster> clustering(const vector<Point> &points, int k, double epsilon,
                            int numUVectors, int numRadiiVectors, int seed) {
   vector<Cluster> bestCluster(k);
-  double rmax = gonzalesrmax(points, k, seed);
+  double rmax = gonzalezrmax(points, k, seed);
 
   // Berechnung der Radien und u-Werte basierend auf 'rmax', 'k' und 'epsilon'.
   vector<vector<double>> radii =

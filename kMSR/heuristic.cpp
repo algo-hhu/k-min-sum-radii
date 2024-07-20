@@ -13,7 +13,7 @@
 
 using namespace std;
 
-vector<Cluster> gonzales(vector<Point> &points, int k, int seed) {
+vector<Cluster> gonzalez(vector<Point> &points, int k, int seed) {
   srand(seed);
   int n = points.size();
   vector<Point> centers;
