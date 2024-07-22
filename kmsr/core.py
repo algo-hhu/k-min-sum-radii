@@ -23,7 +23,7 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
     _parameter_constraints: dict = {
         "n_clusters": [Interval(Integral, 1, None, closed="left")],
         "algorithm": [
-            StrOptions({"auto", "fpt-heuristic", "heuristic", "gonzales", "kmeans"})
+            StrOptions({"auto", "fpt-heuristic", "heuristic", "gonzalez", "kmeans"})
         ],
         "epsilon": [Interval(Real, 0, None, closed="left")],
         "n_u": [Interval(Integral, 1, None, closed="left")],
@@ -148,8 +148,8 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
         else:
             if self.algorithm == "heuristic":
                 wrapper_function = _DLL.heuristic_wrapper
-            elif self.algorithm == "gonzales":
-                wrapper_function = _DLL.gonzales_wrapper
+            elif self.algorithm == "gonzalez":
+                wrapper_function = _DLL.gonzalez_wrapper
             elif self.algorithm == "kmeans":
                 wrapper_function = _DLL.kmeans_wrapper
             else:

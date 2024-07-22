@@ -110,7 +110,7 @@ extern "C"
 #if defined(_WIN32) || defined(__CYGWIN__)
   __declspec(dllexport)
 #endif
-  double gonzales_wrapper(
+  double gonzalez_wrapper(
       double *pointArray,
       int numPoints,
       int dimension,
@@ -123,7 +123,7 @@ extern "C"
   {
     vector<Point> points = arrayToVector(pointArray, numPoints, dimension);
 
-    vector<Cluster> cluster = gonzales(points, k, seed);
+    vector<Cluster> cluster = gonzalez(points, k, seed);
 
     *numClusters = exportCluster(cluster, labels, centers, radii, dimension);
 

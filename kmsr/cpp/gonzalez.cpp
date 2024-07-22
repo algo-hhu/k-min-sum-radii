@@ -1,11 +1,11 @@
 #include <algorithm>
 
-#include "../header/gonzales.h"
+#include "../header/gonzalez.h"
 #include "../header/point.h"
 
 using namespace std;
 
-double gonzalesrmax(const vector<Point> &points, int k, int seed)
+double gonzalezrmax(const vector<Point> &points, int k, int seed)
 {
   srand(seed);
   vector<Point> centers;

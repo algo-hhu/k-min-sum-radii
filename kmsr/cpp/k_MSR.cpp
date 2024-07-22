@@ -6,7 +6,7 @@
 
 #include "../header/k_MSR.h"
 #include "../header/util.h"
-#include "../header/gonzales.h"
+#include "../header/gonzalez.h"
 #include "../header/heuristic.h"
 #include "../header/yildirim.h"
 
@@ -176,7 +176,7 @@ vector<Cluster> clustering(const vector<Point> &points, int k, double epsilon,
                   int numUVectors, int numRadiiVectors, int seed)
 {
   vector<Cluster> bestCluster(k);
-  double rmax = gonzalesrmax(points, k, seed);
+  double rmax = gonzalezrmax(points, k, seed);
 
   // Calculate the radii and u values based on 'rmax', 'k', and 'epsilon'.
   vector<vector<double>> radii =

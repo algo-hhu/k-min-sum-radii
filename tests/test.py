@@ -17,19 +17,19 @@ EXPECTED_VALUES = {
         2: {  # K
             "fpt-heuristic": (45.91, 45.93),
             "heuristic": (48.25, 48.27),
-            "gonzales": (48.25, 48.27),
+            "gonzalez": (48.25, 48.27),
             "kmeans": (48.25, 48.27),
         },
         3: {
             "fpt-heuristic": (55.86, 56.17),
             "heuristic": (57.73, 57.75),
-            "gonzales": (57.73, 57.75),
+            "gonzalez": (57.73, 57.75),
             "kmeans": (57.73, 57.75),
         },
         4: {
             "fpt-heuristic": (50.53, 50.95),
             "heuristic": (52.34, 52.36),
-            "gonzales": (52.34, 52.36),
+            "gonzalez": (52.34, 52.36),
             "kmeans": (52.34, 52.36),
         },
     },
@@ -37,19 +37,19 @@ EXPECTED_VALUES = {
         2: {
             "fpt-heuristic": (41.24, 42.84),
             "heuristic": (42.96, 42.98),
-            "gonzales": (42.96, 44.81),
+            "gonzalez": (42.96, 44.81),
             "kmeans": (42.96, 44.81),
         },
         3: {
             "fpt-heuristic": (51.79, 51.81),
             "heuristic": (51.79, 51.81),
-            "gonzales": (51.79, 60.65),
+            "gonzalez": (51.79, 60.65),
             "kmeans": (51.79, 73.38),
         },
         4: {
             "fpt-heuristic": (66.37, 66.39),
             "heuristic": (68.64, 68.66),
-            "gonzales": (68.64, 68.66),
+            "gonzalez": (68.64, 68.66),
             "kmeans": (68.64, 68.66),
         },
     },
@@ -71,7 +71,7 @@ class TestKMSR(unittest.TestCase):
                     max_cluster_radius=50,
                     dimensions=dim,
                 )
-                for algo in ["fpt-heuristic", "heuristic", "gonzales", "kmeans"]:
+                for algo in ["fpt-heuristic", "heuristic", "gonzalez", "kmeans"]:
                     with self.subTest(msg=f"{algo}_k={k}_dim={dim}"):
                         # costs = []
                         for i in range(20):

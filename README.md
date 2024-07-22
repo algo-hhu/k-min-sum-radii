@@ -9,7 +9,7 @@ kMSR provides various implementations to solve the k-Min-Sum-Radii problem. The 
 
 - `fpt-heuristic`: The algorithm is an heuristic version of what is described in [this paper](https://doi.org/10.1007/978-3-031-49815-2_9). In practice, this works well for clusters that are not too separated. The algorithm uses the parameters `epsilon`, `n_u`, and `num_test_radii` to control the trade-off between the quality of the solution and the runtime. Increase `n_u` for a more accurate solution, which will however require more computation time.
 - `heuristic`: The algorithm is a simple heuristic that explores all possible combinations for the first cluster, and then selects the remaining centers as the points farthest from the radius of the first cluster. This algorithm works well in practice but it is not practical for large datasets.
-- `gonzales`: This is the standard [Gonzales algorithm](https://doi.org/10.1016/0304-3975(85)90224-5) for $k$-center.
+- `gonzalez`: This is the standard [Gonzalez algorithm](https://doi.org/10.1016/0304-3975(85)90224-5) for $k$-center.
 - `kmeans`: This is the [k-means++ algorithm](https://doi.org/10.5555/1283383.1283494) for $k$-means.
 
 Although the last two algorithms are not specifically designed for the k-Min-Sum-Radii problem, they serve as useful baselines for comparing the performance of other algorithms. Additionally, an optimization has been integrated into all algorithms: intersecting balls are merged at the end, resulting in a more cost-effective solution.
@@ -67,7 +67,7 @@ labels = []
 centers = []
 radii = []
 titles = []
-for algo in ["FPT-heuristic", "Heuristic", "Gonzales", "KMeans"]:
+for algo in ["FPT-heuristic", "Heuristic", "Gonzalez", "KMeans"]:
     kmsr = KMSR(
         n_clusters=5,
         algorithm=algo,
@@ -144,7 +144,7 @@ Moreover, depending on the selection of the `algorithm` parameter, you should al
 L. Drexler, A. Hennes, A. Lahiri, M. Schmidt, and J. Wargalla, "Approximating Fair K-Min-Sum-Radii in Euclidean Space," in Lecture notes in computer science, 2023, pp. 119–133. doi: 10.1007/978-3-031-49815-2_9.
 ```
 
-the [following paper](https://doi.org/10.1016/0304-3975(85)90224-5) for `algorithm='gonzales'`:
+the [following paper](https://doi.org/10.1016/0304-3975(85)90224-5) for `algorithm='gonzalez'`:
 
 ```
 T. F. Gonzalez, "Clustering to minimize the maximum intercluster distance," Theoretical Computer Science, vol. 38, pp. 293–306, Jan. 1985, doi: 10.1016/0304-3975(85)90224-5.
