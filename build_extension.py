@@ -14,7 +14,7 @@ extension = Extension(
         "kmsr/_core.cpp",
         "kmsr/cpp/ball.cpp",
         "kmsr/cpp/cluster.cpp",
-        "kmsr/cpp/gonzales.cpp",
+        "kmsr/cpp/gonzalez.cpp",
         "kmsr/cpp/heuristic.cpp",
         "kmsr/cpp/util.cpp",
         "kmsr/cpp/k_MSR.cpp",
