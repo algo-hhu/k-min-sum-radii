@@ -49,8 +49,7 @@ lib.heuristic_wrapper.argtypes = [
     ctypes.c_int,
     ctypes.c_int,
     ctypes.c_int,
-    ctypes.POINTER(ctypes.c_int),
-    ctypes.c_int
+    ctypes.POINTER(ctypes.c_int)
 ]
 lib.heuristic_wrapper.restype = ctypes.POINTER(ClusterData)
 
@@ -142,24 +141,39 @@ def read_points_from_csv(input_file):
 
 
 # Funktion zum Aufrufen der C-Funktionen
-def call_clustering_function(clustering_func, c_array, numPoints, dimensions, k, num_clusters, seed):
-    cluster_ptr = clustering_func(
-        c_array,
-        numPoints,
-        dimensions,
-        k,
-        num_clusters,
-        seed
-    )
+def call_clustering_function(clustering_func, c_array, numPoints, dimensions, k, num_clusters, seed=None):
+    if seed is None:
+        cluster_ptr = clustering_func(
+            c_array,
+            numPoints,
+            dimensions,
+            k,
+            num_clusters
+        )
+    else:
+        cluster_ptr = clustering_func(
+            c_array,
+            numPoints,
+            dimensions,
+            k,
+            num_clusters,
+            seed
+        )
     return cluster_ptr
 
 
 # Funktion zur Durchführung des Clusterings mit verschiedenen Algorithmen
-def cluster(point_files, dimension, k, directory, point_directory, algorithm, c_function, seed):
-    ball_directory = os.path.join(directory, f'{algorithm}/Seed={seed}/Balls')
-    cluster_directory = os.path.join(directory, f'{algorithm}/Seed={seed}/Cluster')
-    plot_directory = os.path.join(directory, f'{algorithm}/Seed={seed}/Plots')
-    result_directory = os.path.join(directory, f'{algorithm}/Seed={seed}/Results')
+def cluster(point_files, dimension, k, directory, point_directory, algorithm, c_function, seed=None):
+    if seed is None:
+        ball_directory = os.path.join(directory, f'{algorithm}/Balls')
+        cluster_directory = os.path.join(directory, f'{algorithm}/Cluster')
+        plot_directory = os.path.join(directory, f'{algorithm}/Plots')
+        result_directory = os.path.join(directory, f'{algorithm}/Results')
+    else:
+        ball_directory = os.path.join(directory, f'{algorithm}/Seed={seed}/Balls')
+        cluster_directory = os.path.join(directory, f'{algorithm}/Seed={seed}/Cluster')
+        plot_directory = os.path.join(directory, f'{algorithm}/Seed={seed}/Plots')
+        result_directory = os.path.join(directory, f'{algorithm}/Seed={seed}/Results')
 
     # Verzeichnisse erstellen, falls sie nicht existieren
     os.makedirs(ball_directory, exist_ok=True)
@@ -192,15 +206,26 @@ def cluster(point_files, dimension, k, directory, point_directory, algorithm, c_
         start_time = time.time()
 
         # Aufrufen der Clustering-Funktion aus der C-Bibliothek
-        cluster_ptr = call_clustering_function(
-            c_function,
-            c_array,
-            numPoints,
-            dimension,
-            k,
-            ctypes.byref(num_clusters),
-            seed
-        )
+        if algorithm == 'Heuristik':
+            cluster_ptr = call_clustering_function(
+                c_function,
+                c_array,
+                numPoints,
+                dimension,
+                k,
+                ctypes.byref(num_clusters),
+                None
+            )
+        else:
+            cluster_ptr = call_clustering_function(
+                c_function,
+                c_array,
+                numPoints,
+                dimension,
+                k,
+                ctypes.byref(num_clusters),
+                seed
+            )
 
         end_time = time.time()
 
@@ -340,7 +365,7 @@ def analyze_results_FPT_Heuristic(dimensions, ks, seeds):
     for dimension in dimensions:
         for k in ks:
             for seed in seeds:
-                result_directory = f'Data4/Dimension={dimension}/k={k}/FPT_Heuristic/Seed={seed}/Results'
+                result_directory = f'Data/Dimension={dimension}/k={k}/FPT_Heuristic/Seed={seed}/Results'
                 df = pd.read_csv(f'{result_directory}/results.csv')
                 df['Dimension'] = dimension
                 df['k'] = k 
@@ -353,7 +378,7 @@ def analyze_results_FPT_Heuristic(dimensions, ks, seeds):
     for dimension in dimensions:
         for k in ks:
             df_subset = combined_df[(combined_df['Dimension'] == dimension) & (combined_df['k'] == k)]
-            plot_directory = f'Data4/Dimension={dimension}/k={k}/FPT_Heuristic'
+            plot_directory = f'Data/Dimension={dimension}/k={k}/FPT_Heuristic'
 
             mean_results = df_subset.groupby(['Datei', 'u', 'epsilon', 'num_radii']).agg({'Dauer (Sekunden)': 'mean', 'Summe_der_Radien': 'mean'}).reset_index()
             
@@ -377,9 +402,6 @@ def analyze_results_FPT_Heuristic(dimensions, ks, seeds):
             analyse_u(mean_results, best_num_radii, best_epsilon, plot_directory, dimension, k)   
             analyze_num_radii(mean_results, best_u, best_epsilon, plot_directory, dimension, k)   
             analyze_epsilon(mean_results, best_u, best_num_radii, plot_directory, dimension, k)     
-
-    # Speichern der zusammengeführten Ergebnisse
-    combined_df.to_csv('Data4/combined_results_FPT_Heuristic.csv', index=False)
 
 
 def analyse_u(df, best_num_radii, best_epsilon, output_directory, dimension, k):
@@ -725,125 +747,127 @@ def analyze_runtime_for_dimensions_and_k(df, dimensions, ks, best_u, best_num_ra
     print('Laufzeitanalyse abgeschlossen und Ergebnisse gespeichert.')
 
 
-def compare_algorithms(dimension, k, seed):
-    # Lade die Ergebnisse
-    FPT_Heuristic_results = pd.read_csv(f'Data/{dimension}/{k}/{seed}/Results/FPT_Heuristic/results.csv')
-    gonzalez_results = pd.read_csv(f'Data/{dimension}/{k}/{seed}/Results/Gonzalez/results.csv')
-    kmeans_results = pd.read_csv(f'Data/{dimension}/{k}/{seed}Results/KMeansPlusPlus/results.csv')
-    heuristik_results = pd.read_csv(f'Data/{dimension}/{k}/{seed}/Results/Heuristik/results.csv')
+def compare_algorithms(dimension, k, seeds):
 
-    # Beste Kombination von u, num_radii und epsilon basierend auf dem kleinsten Durchschnitt der Radien
-    best_u, best_num_radii, best_epsilon = FPT_Heuristic_results.groupby(['u', 'num_radii', 'epsilon'])['Summe_der_Radien'].mean().idxmin()
+    fpt_heuristic_list = []
+    gonzalez_list = []
+    kmeans_list = []
+
+    for seed in seeds:
+        fpt_heuristic_results = pd.read_csv(f'Data/Dimension={dimension}/k={k}/FPT_Heuristic/Seed={seed}/Results/results.csv')
+        fpt_heuristic_results['Seed'] = seed
+        fpt_heuristic_list.append(fpt_heuristic_results)
+        
+        gonzalez_results = pd.read_csv(f'Data/Dimension={dimension}/k={k}/Gonzalez/Seed={seed}/Results/results.csv')
+        gonzalez_results['Seed'] = seed
+        gonzalez_list.append(gonzalez_results)
+        
+        kmeans_results = pd.read_csv(f'Data/Dimension={dimension}/k={k}/KMeansPlusPlus/Seed={seed}/Results/results.csv')
+        kmeans_results['Seed'] = seed
+        kmeans_list.append(kmeans_results)
+
+    fpt_heuristic_df = pd.concat(fpt_heuristic_list, ignore_index=True)
+    gonzalez_df = pd.concat(gonzalez_list, ignore_index=True)
+    kmeans_df = pd.concat(kmeans_list, ignore_index=True)
+
+    fpt_heuristic_df = fpt_heuristic_df.groupby(['Datei', 'u', 'epsilon', 'num_radii']).agg({'Dauer (Sekunden)': 'mean', 'Summe_der_Radien': 'mean'}).reset_index()
+    gonzalez_df = gonzalez_df.groupby('Datei').agg({'Dauer (Sekunden)': 'mean', 'Summe_der_Radien': 'mean'}).reset_index()
+    kmeans_df = kmeans_df.groupby('Datei').agg({'Dauer (Sekunden)': 'mean', 'Summe_der_Radien': 'mean'}).reset_index()
+    heuristik_df = pd.read_csv(f'Data/Dimension={dimension}/k={k}/Heuristik/Results/results.csv')
+
+    best_parameter_df = fpt_heuristic_df.groupby(['u', 'num_radii', 'epsilon']).agg({'Dauer (Sekunden)': 'mean', 'Summe_der_Radien': 'mean'}).reset_index()
+    best_row = best_parameter_df.loc[best_parameter_df['Summe_der_Radien'].idxmin()]
+
+    best_u = best_row['u']
+    best_num_radii = best_row['num_radii']
+    best_epsilon = best_row['epsilon']
+    
 
     # Berechnen der Durchschnittswerte der Radien für jeden Algorithmus
-    best_FPT_Heuristic_avg_radius = FPT_Heuristic_results[(FPT_Heuristic_results['u'] == best_u) & (FPT_Heuristic_results['num_radii'] == best_num_radii) & (FPT_Heuristic_results['epsilon'] == best_epsilon)]['Summe_der_Radien'].mean()
+    best_FPT_Heuristic_avg_radius = fpt_heuristic_results[(fpt_heuristic_results['u'] == best_u) & (fpt_heuristic_results['num_radii'] == best_num_radii) & (fpt_heuristic_results['epsilon'] == best_epsilon)]['Summe_der_Radien'].mean()
     gonzalez_avg_radius = gonzalez_results['Summe_der_Radien'].mean()
     kmeans_avg_radius = kmeans_results['Summe_der_Radien'].mean()
-    heuristik_avg_radius = heuristik_results['Summe_der_Radien'].mean()
+    heuristik_avg_radius = heuristik_df['Summe_der_Radien'].mean()
 
     # Anzeigen der Durchschnittswerte
-    print(f'Durchschnittlicher Radius für FPT_Heuristic: {
-          best_FPT_Heuristic_avg_radius:.6f}')
+    print(f'Durchschnittlicher Radius für FPT_Heuristic: {best_FPT_Heuristic_avg_radius:.6f}')
     print(f'Durchschnittlicher Radius für Gonzalez: {gonzalez_avg_radius:.6f}')
     print(f'Durchschnittlicher Radius für KMeans++: {kmeans_avg_radius:.6f}')
-    print(f'Durchschnittlicher Radius für Heuristik: {
-          heuristik_avg_radius:.6f}')
+    print(f'Durchschnittlicher Radius für Heuristik: {heuristik_avg_radius:.6f}')
 
     all_comparison_results = []
     worse_FPT_Heuristic_points = []
     # Schleife über alle Kombinationen von u und epsilon
-    for u_val in FPT_Heuristic_results['u'].unique():
-        for num_radii_val in FPT_Heuristic_results['num_radii'].unique():
-            for epsilon_val in FPT_Heuristic_results['epsilon'].unique():
+    for u_val in fpt_heuristic_results['u'].unique():
+        for num_radii_val in fpt_heuristic_results['num_radii'].unique():
+            for epsilon_val in fpt_heuristic_results['epsilon'].unique():
 
                 # Zusammensetzen der Dataframes
                 paired_results = pd.merge(
-                    FPT_Heuristic_results[(FPT_Heuristic_results['u'] == u_val) & (FPT_Heuristic_results['num_radii'] == num_radii_val) & (
-                        FPT_Heuristic_results['epsilon'] == epsilon_val)][['Datei', 'Summe_der_Radien']],
+                    fpt_heuristic_results[(fpt_heuristic_results['u'] == u_val) & (fpt_heuristic_results['num_radii'] == num_radii_val) & (fpt_heuristic_results['epsilon'] == epsilon_val)][['Datei', 'Summe_der_Radien']],
                     gonzalez_results[['Datei', 'Summe_der_Radien']], on='Datei', suffixes=('_FPT_Heuristic', '_Gonzalez'))
 
-                paired_results = pd.merge(paired_results, kmeans_results[[
-                                          'Datei', 'Summe_der_Radien']], on='Datei')
-                paired_results.rename(
-                    columns={'Summe_der_Radien': 'Summe_der_Radien_KMeans'}, inplace=True)
-                paired_results = pd.merge(paired_results, heuristik_results[[
-                                          'Datei', 'Summe_der_Radien']], on='Datei')
-                paired_results.rename(
-                    columns={'Summe_der_Radien': 'Summe_der_Radien_Heuristik'}, inplace=True)
+                paired_results = pd.merge(paired_results, kmeans_results[['Datei', 'Summe_der_Radien']], on='Datei')
+                paired_results.rename(columns={'Summe_der_Radien': 'Summe_der_Radien_KMeans'}, inplace=True)
+                paired_results = pd.merge(paired_results, heuristik_df[['Datei', 'Summe_der_Radien']], on='Datei')
+                paired_results.rename(columns={'Summe_der_Radien': 'Summe_der_Radien_Heuristik'}, inplace=True)
 
                 # Runden der Radien
-                paired_results['Summe_der_Radien_FPT_Heuristic'] = paired_results['Summe_der_Radien_FPT_Heuristic'].round(
-                    7)
-                paired_results['Summe_der_Radien_Gonzalez'] = paired_results['Summe_der_Radien_Gonzalez'].round(
-                    7)
-                paired_results['Summe_der_Radien_KMeans'] = paired_results['Summe_der_Radien_KMeans'].round(
-                    7)
-                paired_results['Summe_der_Radien_Heuristik'] = paired_results['Summe_der_Radien_Heuristik'].round(
-                    7)
+                paired_results['Summe_der_Radien_FPT_Heuristic'] = paired_results['Summe_der_Radien_FPT_Heuristic'].round(7)
+                paired_results['Summe_der_Radien_Gonzalez'] = paired_results['Summe_der_Radien_Gonzalez'].round(7)
+                paired_results['Summe_der_Radien_KMeans'] = paired_results['Summe_der_Radien_KMeans'].round(7)
+                paired_results['Summe_der_Radien_Heuristik'] = paired_results['Summe_der_Radien_Heuristik'].round(7)
 
                 # Zählen, wie oft FPT_Heuristic besser als alle anderen ist
-                paired_results['FPT_Heuristic_better_than_all'] = paired_results.apply(
-                    lambda row: row['Summe_der_Radien_FPT_Heuristic'] < row[[
-                        'Summe_der_Radien_Gonzalez', 'Summe_der_Radien_KMeans', 'Summe_der_Radien_Heuristik']].min(),
-                    axis=1
-                )
+                paired_results['FPT_Heuristic_better_than_all'] = paired_results.apply(lambda row: row['Summe_der_Radien_FPT_Heuristic'] < row[['Summe_der_Radien_Gonzalez',
+                                                                                                                                                'Summe_der_Radien_KMeans', 'Summe_der_Radien_Heuristik']].min(),axis=1)
 
                 # Zählen, wie oft FPT_Heuristic schlechter als alle anderen ist
-                paired_results['FPT_Heuristic_worse_than_all'] = paired_results.apply(
-                    lambda row: row['Summe_der_Radien_FPT_Heuristic'] > row[[
-                        'Summe_der_Radien_Gonzalez', 'Summe_der_Radien_KMeans', 'Summe_der_Radien_Heuristik']].max(),
-                    axis=1
-                )
-                FPT_Heuristic_better_count = paired_results['FPT_Heuristic_better_than_all'].sum(
-                )
-                FPT_Heuristic_worse_count = paired_results['FPT_Heuristic_worse_than_all'].sum(
-                )
+                paired_results['FPT_Heuristic_worse_than_all'] = paired_results.apply(lambda row: row['Summe_der_Radien_FPT_Heuristic'] > row[['Summe_der_Radien_Gonzalez', 
+                                                                                                                                               'Summe_der_Radien_KMeans', 'Summe_der_Radien_Heuristik']].max(),axis=1)
+                FPT_Heuristic_better_count = paired_results['FPT_Heuristic_better_than_all'].sum()
+                FPT_Heuristic_worse_count = paired_results['FPT_Heuristic_worse_than_all'].sum()
 
                 # Zählt wie oft FPT_Heuristic besser ist als Gonzalez
-                FPT_Heuristic_vs_gonzalez_better = (
-                    paired_results['Summe_der_Radien_FPT_Heuristic'] < paired_results['Summe_der_Radien_Gonzalez']).sum()
+                FPT_Heuristic_vs_gonzalez_better = (paired_results['Summe_der_Radien_FPT_Heuristic'] < paired_results['Summe_der_Radien_Gonzalez']).sum()
+
+                FPT_Heuristic_vs_gonzalez_equal = (paired_results['Summe_der_Radien_FPT_Heuristic'] == paired_results['Summe_der_Radien_Gonzalez']).sum()
 
                 # Zählt wie oft FPT_Heuristic schlechter ist als Gonzalez
-                FPT_Heuristic_vs_gonzalez_worse = (
-                    paired_results['Summe_der_Radien_FPT_Heuristic'] > paired_results['Summe_der_Radien_Gonzalez']).sum()
+                FPT_Heuristic_vs_gonzalez_worse = (paired_results['Summe_der_Radien_FPT_Heuristic'] > paired_results['Summe_der_Radien_Gonzalez']).sum()
 
                 # Zählt wie oft FPT_Heuristic besser ist als KMeans++
-                FPT_Heuristic_vs_kmeans_better = (
-                    paired_results['Summe_der_Radien_FPT_Heuristic'] < paired_results['Summe_der_Radien_KMeans']).sum()
+                FPT_Heuristic_vs_kmeans_better = (paired_results['Summe_der_Radien_FPT_Heuristic'] < paired_results['Summe_der_Radien_KMeans']).sum()
+
+                FPT_Heuristic_vs_kmeans_equal = (paired_results['Summe_der_Radien_FPT_Heuristic'] == paired_results['Summe_der_Radien_KMeans']).sum()
 
                 # Zählt wie oft FPT_Heuristic schlechter ist als KMeans++
-                FPT_Heuristic_vs_kmeans_worse = (
-                    paired_results['Summe_der_Radien_FPT_Heuristic'] > paired_results['Summe_der_Radien_KMeans']).sum()
+                FPT_Heuristic_vs_kmeans_worse = (paired_results['Summe_der_Radien_FPT_Heuristic'] > paired_results['Summe_der_Radien_KMeans']).sum()
 
                 # Zählt wie oft FPT_Heuristic besser ist als die Heuristik
-                FPT_Heuristic_vs_heuristik_better = (
-                    paired_results['Summe_der_Radien_FPT_Heuristic'] < paired_results['Summe_der_Radien_Heuristik']).sum()
+                FPT_Heuristic_vs_heuristik_better = (paired_results['Summe_der_Radien_FPT_Heuristic'] < paired_results['Summe_der_Radien_Heuristik']).sum()
+
+                FPT_Heuristic_vs_heuristik_equal = (paired_results['Summe_der_Radien_FPT_Heuristic'] == paired_results['Summe_der_Radien_Heuristik']).sum()
 
                 # Zählt wie oft FPT_Heuristic schlechter ist als die Heuristik
-                FPT_Heuristic_vs_heuristik_worse = (
-                    paired_results['Summe_der_Radien_FPT_Heuristic'] > paired_results['Summe_der_Radien_Heuristik']).sum()
+                FPT_Heuristic_vs_heuristik_worse = (paired_results['Summe_der_Radien_FPT_Heuristic'] > paired_results['Summe_der_Radien_Heuristik']).sum()
 
                 total_count = paired_results.shape[0]
 
-                FPT_Heuristic_better_percentage = (
-                    FPT_Heuristic_better_count / total_count) * 100
-                FPT_Heuristic_worse_percentage = (
-                    FPT_Heuristic_worse_count / total_count) * 100
+                FPT_Heuristic_better_percentage = (FPT_Heuristic_better_count / total_count) * 100
+                FPT_Heuristic_worse_percentage = (FPT_Heuristic_worse_count / total_count) * 100
 
-                FPT_Heuristic_vs_gonzalez_better_percentage = (
-                    FPT_Heuristic_vs_gonzalez_better / total_count) * 100
-                FPT_Heuristic_vs_gonzalez_worse_percentage = (
-                    FPT_Heuristic_vs_gonzalez_worse / total_count) * 100
+                FPT_Heuristic_vs_gonzalez_better_percentage = (FPT_Heuristic_vs_gonzalez_better / total_count) * 100
+                FPT_Heuristic_vs_gonzalez_equal_percentage = (FPT_Heuristic_vs_gonzalez_equal / total_count) * 100
+                FPT_Heuristic_vs_gonzalez_worse_percentage = (FPT_Heuristic_vs_gonzalez_worse / total_count) * 100
 
-                FPT_Heuristic_vs_kmeans_better_percentage = (
-                    FPT_Heuristic_vs_kmeans_better / total_count) * 100
-                FPT_Heuristic_vs_kmeans_worse_percentage = (
-                    FPT_Heuristic_vs_kmeans_worse / total_count) * 100
+                FPT_Heuristic_vs_kmeans_better_percentage = (FPT_Heuristic_vs_kmeans_better / total_count) * 100
+                FPT_Heuristic_vs_kmeans_equal_percentage = (FPT_Heuristic_vs_kmeans_equal / total_count) * 100
+                FPT_Heuristic_vs_kmeans_worse_percentage = (FPT_Heuristic_vs_kmeans_worse / total_count) * 100
 
-                FPT_Heuristic_vs_heuristik_better_percentage = (
-                    FPT_Heuristic_vs_heuristik_better / total_count) * 100
-                FPT_Heuristic_vs_heuristik_worse_percentage = (
-                    FPT_Heuristic_vs_heuristik_worse / total_count) * 100
+                FPT_Heuristic_vs_heuristik_better_percentage = (FPT_Heuristic_vs_heuristik_better / total_count) * 100
+                FPT_Heuristic_vs_heuristik_equal_percentage = (FPT_Heuristic_vs_heuristik_equal / total_count) * 100
+                FPT_Heuristic_vs_heuristik_worse_percentage = (FPT_Heuristic_vs_heuristik_worse / total_count) * 100
 
                 # Ergebnisse sammeln
                 all_comparison_results.append({
@@ -854,29 +878,30 @@ def compare_algorithms(dimension, k, seed):
                     'FPT_Heuristic vs Alle Schlechter (%)': FPT_Heuristic_worse_percentage,
                     'FPT_Heuristic vs Gonzalez Besser (%)': FPT_Heuristic_vs_gonzalez_better_percentage,
                     'FPT_Heuristic vs Gonzalez Schlechter (%)': FPT_Heuristic_vs_gonzalez_worse_percentage,
+                    'FPT_Heuristic vs Gonzalez Gleich (%)': FPT_Heuristic_vs_gonzalez_equal_percentage,
                     'FPT_Heuristic vs KMeans++ Besser (%)': FPT_Heuristic_vs_kmeans_better_percentage,
                     'FPT_Heuristic vs KMeans++ Schlechter (%)': FPT_Heuristic_vs_kmeans_worse_percentage,
+                    'FPT_Heuristic vs KMeans++ Gleich (%)': FPT_Heuristic_vs_kmeans_equal_percentage,
                     'FPT_Heuristic vs Heuristik Besser (%)': FPT_Heuristic_vs_heuristik_better_percentage,
-                    'FPT_Heuristic vs Heuristik Schlechter (%)': FPT_Heuristic_vs_heuristik_worse_percentage
+                    'FPT_Heuristic vs Heuristik Schlechter (%)': FPT_Heuristic_vs_heuristik_worse_percentage,
+                    'FPT_Heuristic vs Heuristik Gleich (%)': FPT_Heuristic_vs_heuristik_equal_percentage
                 })
 
                 # Speichern der Dateien, bei denen FPT_Heuristic schlechter als alle anderen ist
                 if u_val == best_u and epsilon_val == best_epsilon and num_radii_val == best_num_radii:
-                    worse_files = paired_results[paired_results['FPT_Heuristic_worse_than_all'] == True]['Datei'].tolist(
-                    )
+                    worse_files = paired_results[paired_results['FPT_Heuristic_worse_than_all'] == True]['Datei'].tolist()
                     worse_FPT_Heuristic_points.extend(worse_files)
 
     # Ergebnisse in ein DataFrame packen
     comparison_df = pd.DataFrame(all_comparison_results)
 
     # Ergebnisse als Tabelle speichern
-    comparison_df.to_csv(
-        f'Data/{dimension}/{k}/Results/comparison_all_us_epsilons.csv', index=False)
+    os.makedirs(f'Data/Dimension={dimension}/k={k}/ComparisonResults', exist_ok=True)
+    comparison_df.to_csv(f'Data/Dimension={dimension}/k={k}/ComparisonResults/comparison_all_us_epsilons.csv', index=False)
 
     # Markdown-Datei erstellen
-    with open(f'Data/{dimension}/{k}/Results/comparison_all_us_epsilons.md', 'w') as md_file:
-        md_file.write(
-            '# Paarweiser Vergleich der Clustering-Algorithmen für alle u- und epsilon-Werte\n\n')
+    with open(f'Data/Dimension={dimension}/k={k}/ComparisonResults/comparison_all_us_epsilons.md', 'w') as md_file:
+        md_file.write('# Paarweiser Vergleich der Clustering-Algorithmen für alle u- und epsilon-Werte\n\n')
         md_file.write('| u  | epsilon | num_radii | FPT_Heuristic vs Alle Besser (%) | FPT_Heuristic vs Alle Schlechter (%) | FPT_Heuristic vs Gonzalez Besser (%) | FPT_Heuristic vs Gonzalez Schlechter (%) | FPT_Heuristic vs KMeans++ Besser (%) | FPT_Heuristic vs KMeans++ Schlechter (%) | FPT_Heuristic vs Heuristik Besser (%) | FPT_Heuristic vs Heuristik Schlechter (%) |\n')
         md_file.write('|----|---------|---------------|----------------------------|--------------------------------|--------------------------------|------------------------------------|--------------------------------|------------------------------------|---------------------------------|-------------------------------------|\n')
         for _, row in comparison_df.iterrows():
@@ -884,13 +909,61 @@ def compare_algorithms(dimension, k, seed):
                           row['FPT_Heuristic vs KMeans++ Besser (%)']:.2f} | {row['FPT_Heuristic vs KMeans++ Schlechter (%)']:.2f} | {row['FPT_Heuristic vs Heuristik Besser (%)']:.2f} | {row['FPT_Heuristic vs Heuristik Schlechter (%)']:.2f} |\n')
 
     # Speichern der Dateien, bei denen FPT_Heuristic schlechter als alle anderen ist
-    with open(f'Data/{dimension}/{k}/Results/FPT_Heuristic/worse_FPT_Heuristic_points.md', 'w') as md_file:
-        md_file.write(f'u: {best_u}, num_radii: {
-                      best_num_radii}, epsilon: {best_epsilon}\n')
+    with open(f'Data/Dimension={dimension}/k={k}/ComparisonResults/worse_FPT_Heuristic_points.md', 'w') as md_file:
+        md_file.write(f'u: {best_u}, num_radii: {best_num_radii}, epsilon: {best_epsilon}\n')
         md_file.write('Dateien:\n')
         for datei in worse_FPT_Heuristic_points:
             md_file.write(f'{datei}\n')
         md_file.write('\n')
+
+
+    with open(f'Data/Dimension={dimension}/k={k}/ComparisonResults/FPT_Heuristik_vs_Gonzalez.tex', 'w') as f:
+        f.write('\\begin{table}[H]\n')
+        f.write('\\centering\n')
+        f.write('\\begin{tabularx}{\\textwidth}{|X|X|X|X|}\n')
+        f.write('\\hline\n')
+        f.write('\\textit{u} & Besser (\\%) & Gleich (\\%) & Schlechter (\\%)\\\\ \\hline\n')
+
+        for _, row in comparison_df.iterrows():
+            f.write(f'{int(row['u'])} & {row['FPT_Heuristic vs Gonzalez Besser (%)']:.2f} & {row['FPT_Heuristic vs Gonzalez Gleich (%)']:.2f} & {row['FPT_Heuristic vs Gonzalez Schlechter (%)']:.2f} \\\\ \\hline\n')
+
+        f.write('\\end{tabularx}\n')
+        f.write(f'\\caption{{Vergleich der Ergbenisse von FPT-Heuristik und Gonzalez}}\n')
+        f.write('\\label{tab:fpt_heuristic_vs_gonzalez}\n')
+        f.write('\\end{table}\n')
+        f.write('\n')
+    
+    with open(f'Data/Dimension={dimension}/k={k}/ComparisonResults/FPT_Heuristik_vs_KMeans.tex', 'w') as f:
+        f.write('\\begin{table}[H]\n')
+        f.write('\\centering\n')
+        f.write('\\begin{tabularx}{\\textwidth}{|X|X|X|X|}\n')
+        f.write('\\hline\n')
+        f.write('\\textit{u} & Besser (\\%) & Gleich (\\%) & Schlechter (\\%)\\\\ \\hline\n')
+
+        for _, row in comparison_df.iterrows():
+            f.write(f'{int(row['u'])} & {row['FPT_Heuristic vs KMeans++ Besser (%)']:.2f}& {row['FPT_Heuristic vs KMeans++ Gleich (%)']:.2f}  & {row['FPT_Heuristic vs KMeans++ Schlechter (%)']:.2f} \\\\ \\hline\n')
+
+        f.write('\\end{tabularx}\n')
+        f.write(f'\\caption{{Vergleich der Ergbenisse von FPT-Heuristik und KMeans++}}\n')
+        f.write('\\label{tab:fpt_heuristic_vs_kmeans}\n')
+        f.write('\\end{table}\n')
+        f.write('\n')
+    
+    with open(f'Data/Dimension={dimension}/k={k}/ComparisonResults/FPT_Heuristik_vs_Heuristik.tex', 'w') as f:
+        f.write('\\begin{table}[H]\n')
+        f.write('\\centering\n')
+        f.write('\\begin{tabularx}{\\textwidth}{|X|X|X|X|}\n')
+        f.write('\\hline\n')
+        f.write('\\textit{u} & Besser (\\%) & Gleich (\\%) & Schlechter (\\%)\\\\ \\hline\n')
+
+        for _, row in comparison_df.iterrows():
+            f.write(f'{int(row['u'])} & {row['FPT_Heuristic vs Heuristik Besser (%)']:.2f} & {row['FPT_Heuristic vs Heuristik Gleich (%)']:.2f} & {row['FPT_Heuristic vs Heuristik Schlechter (%)']:.2f} \\\\ \\hline\n')
+
+        f.write('\\end{tabularx}\n')
+        f.write(f'\\caption{{Vergleich der Ergbenisse von FPT-Heuristik und Heuristik}}\n')
+        f.write('\\label{tab:fpt_heuristic_vs_heuristik}\n')
+        f.write('\\end{table}\n')
+        f.write('\n')
 
 
 def clustering(config, dimensions, ks, seeds, epsilon_values, u_values, num_radii_values, number_files):
@@ -915,27 +988,29 @@ def clustering(config, dimensions, ks, seeds, epsilon_values, u_values, num_radi
                 cluster(point_files, dimension, k, directory, point_directory, 'KMeansPlusPlus', lib.kmeans_wrapper, seed)
 
 
-            cluster(point_files, dimension, k, directory, point_directory, 'Heuristik', lib.heuristic_wrapper, 1)
+            cluster(point_files, dimension, k, directory, point_directory, 'Heuristik', lib.heuristic_wrapper)
 
 
 
 if __name__ == '__main__':
     epsilon_values = [0.5]
-    u_values = [1000]
-    num_radii_values = [1, 5, 10, 15, 20, 25]
+    u_values = [30000]
+    num_radii_values = [1, 5]
     number_files = 100
-    dimensions = range(2,3)
-    ks = range(3, 4)
-    seeds = range(5)
+    dimensions = [2]
+    ks = [4]
+    seeds = range(1)
 
     # Argumente aus der Konfiguration holen
     config = generator.handle_arguments()
 
     # Clustering-Algorithmen ausführen
-    # clustering(config, dimensions, ks, seeds, epsilon_values, u_values, num_radii_values, number_files)
+    clustering(config, dimensions, ks, seeds, epsilon_values, u_values, num_radii_values, number_files)
 
     # Analyse und Vergleich der Ergebnisse von FPT_Heuristic
     analyze_results_FPT_Heuristic(dimensions, ks, seeds)
 
-    # Vergleich der Ergebnisse der verschiedenen Algorithmen
-    #compare_algorithms()
+    for dimension in dimensions:
+        for k in ks:
+            # Vergleich der Ergebnisse der verschiedenen Algorithmen
+            compare_algorithms(dimension, k, seeds)
