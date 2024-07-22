@@ -8,6 +8,7 @@ license = "LICENSE"
 packages = [
     { include = "kmsr" },
 ]
+include = ["images"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
