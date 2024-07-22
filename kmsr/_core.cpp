@@ -25,6 +25,7 @@ vector<Point> arrayToVector(double *array, int numPoints, int dimension)
   return points;
 }
 
+
 int exportCluster(vector<Cluster> clusters, int *labels, double *centers, double *radii, int dimensions)
 {
   int numClusters = 0;
@@ -53,6 +54,7 @@ int exportCluster(vector<Cluster> clusters, int *labels, double *centers, double
   }
   return numClusters;
 }
+
 
 extern "C"
 {
