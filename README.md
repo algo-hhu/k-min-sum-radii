@@ -14,6 +14,8 @@ kMSR provides various implementations to solve the k-Min-Sum-Radii problem. The 
 
 Although the last two algorithms are not specifically designed for the k-Min-Sum-Radii problem, they serve as useful baselines for comparing the performance of other algorithms. Additionally, an optimization has been integrated into all algorithms: intersecting balls are merged at the end, resulting in a more cost-effective solution.
 
+For computing the minimum enclosing circle of a set of points we use the [miniball](https://people.inf.ethz.ch/gaertner/subdir/software/miniball.html) [header](https://github.com/algo-hhu/k-min-sum-radii/blob/main/kmsr/header/miniball.h) for C++. Their code has not been changed.
+
 **You can try kMSR out on our [Clustering Toolkit](https://clustering-toolkit.algo.hhu.de/K-Min_Sum_Radii_Clustering)!**
 
 
