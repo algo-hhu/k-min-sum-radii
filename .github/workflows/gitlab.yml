@@ -31,5 +31,6 @@ jobs:
         variables: |
           {
             "PROJECT": "k-min-sum-radii",
-            "GIT_HASH": "${{ github.event.pull_request.head.sha || github.sha }}"
+            "GIT_HASH": "${{ github.event.pull_request.head.sha || github.sha }}",
+            "PIPELINES": "ubuntu,debian,arch,ventura,monterey,windows"
           }
