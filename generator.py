@@ -61,14 +61,14 @@ def generate_clusters(config, dimension, k):
 
 
 # Funktion zum Schreiben der generierten Punkte in eine CSV-Datei
-def write_clusters_to_file(points, file_index, dimension, k):
+def write_clusters_to_file(points, file_index, dimension, k, data_directory):
 
     # Sicherstellen, dass das Verzeichnis existiert
-    if not os.path.exists(f'Data/Dimension={dimension}/k={k}/Points'):
-        os.makedirs(f'Data/Dimension={dimension}/k={k}/Points')
+    if not os.path.exists(f'{data_directory}/Dimension={dimension}/k={k}/Points'):
+        os.makedirs(f'{data_directory}/Dimension={dimension}/k={k}/Points')
 
     # Erzeugen des Dateinamens
-    file_name = f'Data/Dimension={dimension}/k={k}/Points/points_{file_index}.csv'
+    file_name = f'{data_directory}/Dimension={dimension}/k={k}/Points/points_{file_index}.csv'
 
     with open(file_name, 'w') as file:
         for point in points:
@@ -115,7 +115,7 @@ def handle_arguments():
         '--max-cluster-radius',
         type=float,
         help='minimum radius of generated clusters',
-        default=1.5
+        default=1
     )
     args = parser.parse_args()
 
@@ -130,13 +130,17 @@ def handle_arguments():
 
 
 # Hauptfunktion zum Generieren der Daten
-def generate_data(config, dimension, k, number_files):
+def generate_data(config, dimension, k, number_files, data_directory):
     random.seed(1234)
+    max_value = 2.5 * k
+    config['max_value'] = max_value
+    config['max_cluster_radius'] = max_value / 10
+    config['min_cluster_radius'] = max_value / 15
     for i in range(number_files):
         # Generieren der Cluster
         centers, points = generate_clusters(config, dimension, k)
         # Schreiben der generierten Daten in eine Datei
-        write_clusters_to_file(centers + points, i, dimension, k)
+        write_clusters_to_file(centers + points, i, dimension, k, data_directory)
 
 
 def main():
