@@ -7,7 +7,7 @@
 #include "header/gonzalez.h"
 #include "header/heuristic.h"
 #include "header/util.h"
-#include "header/yildirim.h"
+#include "header/welzl.h"
 
 using namespace std;
 
@@ -153,7 +153,7 @@ vector<Ball> selection(const vector<Point> &points, int k, const vector<int> &u,
     // der alle Punkte in 'S_ui' einschließt, und vergrößer seinen Radius um den
     // Faktor Lambda.
     if (Si[u[i]].size() >= 2) {
-      Ball b = findMEB(Si[u[i]], epsilon);
+      Ball b = findMinEnclosingBall(Si[u[i]]);
       b.setRadius(b.getRadius() * lambda);
       balls[u[i]] = b;
     } else {
@@ -170,8 +170,7 @@ vector<Cluster> clustering(const vector<Point> &points, int k, double epsilon,
   double rmax = gonzalezrmax(points, k, seed);
 
   // Berechnung der Radien und u-Werte basierend auf 'rmax', 'k' und 'epsilon'.
-  vector<vector<double>> radii =
-      getRandomRadii(rmax, k, epsilon, numRadiiVectors, seed);
+  vector<vector<double>> radii = getRandomRadii(rmax, k, epsilon, numRadiiVectors, seed);
   vector<vector<int>> u = getU(points.size(), k, epsilon, numUVectors, seed);
 
   // Initialisiere das 'bestCluster', indem alle Punkte Teil eines Clusters
@@ -205,6 +204,7 @@ vector<Cluster> clustering(const vector<Point> &points, int k, double epsilon,
         }
 
         // Berechnung der Kosten für die lokalen Cluster.
+        localCluster = mergeCluster(localCluster);
         double localCost = cost(localCluster);
 
 #pragma omp critical
@@ -220,5 +220,5 @@ vector<Cluster> clustering(const vector<Point> &points, int k, double epsilon,
     }
   }
 
-  return mergeCluster(bestCluster);
+  return bestCluster;
 }
