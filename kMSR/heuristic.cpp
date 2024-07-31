@@ -165,8 +165,8 @@ vector<Cluster> heuristik(vector<Point> &points, int k) {
 
         // Weise die Punkte den nächstgelegenen Zentren zu
         vector<Cluster> cluster = assignPointsToCluster(points, centers, k);
-        double clusterCost =
-            cost(cluster);  // Berechne die Kosten des aktuellen Clusters
+        cluster = mergeCluster(cluster);
+        double clusterCost = cost(cluster);  // Berechne die Kosten des aktuellen Clusters
 
         // Aktualisiere lokale beste Cluster, falls das aktuelle Cluster besser
         // ist
@@ -184,6 +184,5 @@ vector<Cluster> heuristik(vector<Point> &points, int k) {
     }
   }
 
-  // Merged überlappende oder berührende Cluster
-  return mergeCluster(bestCluster);
+  return bestCluster;
 }
