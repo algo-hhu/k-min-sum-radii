@@ -431,9 +431,9 @@ def analyse_u(df, best_num_radii, best_epsilon, output_directory, dimension, k):
 
     plt.figure(figsize=(12, 8))
     best_df.boxplot(column='Dauer (Sekunden)', by='u')
-    plt.title(f'Laufzeit nach u\n(num_radii={best_num_radii}, epsilon={best_epsilon}, Dimension={dimension}, k={k})', fontsize=14, pad=20)
+    plt.title(f'Laufzeit nach num_u\n(num_radii={best_num_radii}, epsilon={best_epsilon}, Dimension={dimension}, k={k})', fontsize=14, pad=20)
     plt.suptitle('')
-    plt.xlabel('u', fontsize=12)
+    plt.xlabel('num_u', fontsize=12)
     plt.ylabel('Dauer (Sekunden)', fontsize=12)
     plt.xticks(rotation=45, fontsize=10)
     plt.yticks(fontsize=10)
@@ -447,8 +447,8 @@ def analyse_u(df, best_num_radii, best_epsilon, output_directory, dimension, k):
         avg_dauer=('Dauer (Sekunden)', 'mean')
     ).reset_index()
     plt.plot(line_data['u'], line_data['avg_dauer'], marker='o', linestyle='-', color='b')
-    plt.title(f'Laufzeit nach u\n(num_radii={best_num_radii}, epsilon={best_epsilon}, Dimension={dimension}, k={k})', fontsize=25, pad=20)
-    plt.xlabel('u', fontsize=20)
+    plt.title(f'Laufzeit nach num_u\n(num_radii={best_num_radii}, epsilon={best_epsilon}, Dimension={dimension}, k={k})', fontsize=25, pad=20)
+    plt.xlabel('num_u', fontsize=20)
     plt.ylabel('Dauer (Sekunden)', fontsize=20)
     plt.xticks(line_data['u'], fontsize=15, rotation=45)
     plt.yticks(fontsize=15)
@@ -458,10 +458,10 @@ def analyse_u(df, best_num_radii, best_epsilon, output_directory, dimension, k):
 
     plt.figure(figsize=(12, 8))
     best_df.boxplot(column='Summe_der_Radien', by='u')
-    plt.title(f'Verteilung der Summe der Radien nach Anzahl von u\n (num_radii={best_num_radii}, epsilon={best_epsilon}, Dimension={dimension}, k={k})', fontsize=14, pad=20)
+    plt.title(f'Verteilung der Summe der Radien nach Anzahl von num_u\n (num_radii={best_num_radii}, epsilon={best_epsilon}, Dimension={dimension}, k={k})', fontsize=14, pad=20)
     plt.suptitle('')
-    plt.xlabel('u', fontsize=12)
-    plt.ylabel('Summe_der_Radien', fontsize=12)
+    plt.xlabel('num_u', fontsize=12)
+    plt.ylabel('Summe der Radien', fontsize=12)
     plt.xticks(rotation=45, fontsize=10)
     plt.yticks(fontsize=10)
     plt.tight_layout(pad=2.0)
@@ -471,31 +471,20 @@ def analyse_u(df, best_num_radii, best_epsilon, output_directory, dimension, k):
     # Bestimmen des minimalen u-Werts
     min_u = best_df['u'].min()
     min_df = best_df[best_df['u'] == min_u]
+    max_radius = min_df['Summe_der_Radien'].mean()
 
     # Liste zur Speicherung der Verbesserungen
     improvements = []
 
     # Iteration über alle einzigartigen u-Werte in best_df
     for u in best_df['u'].unique():
-        if u != min_u:
-            df_u = best_df[best_df['u'] == u]
-            merged = pd.merge(min_df, df_u, on=['epsilon', 'num_radii'], suffixes=('_min', f'_u{u}'))
-            merged['improvement'] = (merged['Summe_der_Radien_min'] - merged[f'Summe_der_Radien_u{u}']) / merged['Summe_der_Radien_min'] * 100
-            avg_radius = merged[f'Summe_der_Radien_u{u}'].mean()  # Durchschnittliche Summe der Radien für den aktuellen u
-            improvements.append((u, merged['improvement'].mean(), avg_radius))
+        df_u = best_df[best_df['u'] == u]
+        u_radius = df_u['Summe_der_Radien'].mean()
+        improvement = (max_radius - u_radius) / max_radius * 100
+
+        improvements.append((u, improvement, u_radius))
 
     improvement_df = pd.DataFrame(improvements, columns=['u', 'Improvement (%)', 'Durchschnitt der Summe der Radien'])
-
-    # Markdown-Datei erstellen und Ergebnisse formatieren
-    with open(f'{output_directory}/u_radius_improvement.md', 'w') as md_file:
-        md_file.write('# Verbesserung des Radius\n')
-        md_file.write(f'Vergleich der Verbesserungen des Radius im Vergleich zu u={min_u}:\n\n')
-        md_file.write('| u | Improvement (%) | Druchschnitt der Summe der Radien |\n')
-        md_file.write('|---|-----------------|-----------------------------------|\n')
-        for row in improvements:
-            md_file.write(f'| {row[0]} | {row[1]:.2f} | {row[2]:.6f} |\n')
-        md_file.write('\n')
-
 
 
     tex_file = f'{output_directory}/u.tex'
@@ -506,15 +495,15 @@ def analyse_u(df, best_num_radii, best_epsilon, output_directory, dimension, k):
         f.write('\\begin{tabularx}{\\textwidth}{|X|X|X|X|X|X|}\n')
         f.write('\\hline\n')
         f.write(
-            '\\textit{u} & Mittelwert (Sek.) & Median (Sek.) & Standard-abweichung & Minimum (Sek.) & Maximum (Sek.) \\\\ \\hline\n')
+            '\\textit{num\\_u} & Mittelwert (Sek.) & Median (Sek.) & Standard-abweichung & Minimum (Sek.) & Maximum (Sek.) \\\\ \\hline\n')
 
         for _, row in duration_stats.iterrows():
             f.write(f'{int(row["u"])} & {row["mean_duration"]:.4f} & {row["median_duration"]:.4f} & {row["std_duration"]:.4f} & {row["min_duration"]:.4f} & {row["max_duration"]:.4f} \\\\ \\hline\n')
 
         f.write('\\end{tabularx}\n')
         f.write(
-            f'\\caption{{Statistische Zusammenfassung der Laufzeit für verschiedene Werte von \\textit{{u}} (num\\_radii={best_num_radii}, epsilon={best_epsilon}, Dimension={dimension}, k={k}).}}\n')
-        f.write('\\label{tab:stats_u}\n')
+            f'\\caption{{Statistische Zusammenfassung der Laufzeit für verschiedene Werte von \\textit{{num\\_u}} (num\\_radii={best_num_radii}, epsilon={best_epsilon}, Dimension={dimension}, k={k}).}}\n')
+        f.write(f'\\label{{tab:stats_u_d{dimension}_k{k}}}\n')
         f.write('\\end{table}\n')
         f.write('\n')
 
@@ -523,15 +512,33 @@ def analyse_u(df, best_num_radii, best_epsilon, output_directory, dimension, k):
         f.write('\\begin{tabularx}{\\textwidth}{|X|X|X|X|X|X|}\n')
         f.write('\\hline\n')
         f.write(
-            '\\textit{u} & Mittelwert & Median & Standard-abweichung & Minimum & Maximum \\\\ \\hline\n')
+            '\\textit{num\\_u} & Mittelwert & Median & Standard-abweichung & Minimum & Maximum \\\\ \\hline\n')
 
         for _, row in sum_of_radii_stats.iterrows():
             f.write(f'{int(row["u"])} & {row["mean_sum"]:.4f} & {row["median_sum"]:.4f} & {row["std_sum"]:.4f} & {row["min_sum"]:.4f} & {row["max_sum"]:.4f} \\\\ \\hline\n')
 
         f.write('\\end{tabularx}\n')
         f.write(
-            f'\\caption{{Statistische Zusammenfassung der Summe der Radien für verschiedene Werte von \\textit{{u}} (num\\_radii={best_num_radii}, epsilon={best_epsilon}, Dimension={dimension}, k={k}).}}\n')
-        f.write('\\label{tab:summe_der_radien_u}\n')
+            f'\\caption{{Statistische Zusammenfassung der Summe der Radien für verschiedene Werte von \\textit{{num\\_u}} (num\\_radii={best_num_radii}, epsilon={best_epsilon}, Dimension={dimension}, k={k}).}}\n')
+        f.write(f'\\label{{tab:summe_der_radien_u_d{dimension}_k{k}}}\n')
+        f.write('\\end{table}\n')
+        f.write('\n')
+
+
+        f.write('\\begin{table}[H]\n')
+        f.write('\\centering\n')
+        f.write('\\begin{tabularx}{\\textwidth}{|X|X|X|}\n')
+        f.write('\\hline\n')
+        f.write(
+            '\\textit{num\\_u} & Mittelwert Summe der Radien & Verbesserung \\%  \\\\ \\hline\n')
+
+        for _, row in improvement_df.iterrows():
+            f.write(f'{int(row['u'])} & {row['Durchschnitt der Summe der Radien']:.6f} & {row['Improvement (%)']:.2f} \\\\ \\hline\n')
+
+        f.write('\\end{tabularx}\n')
+        f.write(
+            f'\\caption{{Verbesserung des Mittelwerts der Summe der Radien für verschiedene Werte von \\textit{{num\\_u}} (num\\_radii={best_num_radii}, epsilon={best_epsilon}, Dimension={dimension}, k={k}).}}\n')
+        f.write(f'\\label{{tab:summe_der_radien_u_d{dimension}_k{k}}}\n')
         f.write('\\end{table}\n')
 
 
@@ -556,7 +563,7 @@ def analyze_num_radii(df, best_u, best_epsilon, output_directory, dimension, k):
 
     plt.figure(figsize=(12, 8))
     best_df.boxplot(column='Dauer (Sekunden)', by='num_radii')
-    plt.title(f'Laufzeit nach num_radii\n(u={best_u}, epsilon={best_epsilon}, Dimension={dimension}, k={k})', fontsize=14, pad=20)
+    plt.title(f'Laufzeit nach num_radii\n(num_u={best_u}, epsilon={best_epsilon}, Dimension={dimension}, k={k})', fontsize=14, pad=20)
     plt.suptitle('')
     plt.xlabel('num_radii', fontsize=12)
     plt.ylabel('Dauer (Sekunden)', fontsize=12)
@@ -568,10 +575,10 @@ def analyze_num_radii(df, best_u, best_epsilon, output_directory, dimension, k):
 
     plt.figure(figsize=(12, 8))
     best_df.boxplot(column='Summe_der_Radien', by='num_radii')
-    plt.title(f'Verteilung der Summe der Radien nach Anzahl von num_radii\n (u={best_u}, epsilon={best_epsilon}, Dimension={dimension}, k={k})', fontsize=14, pad=20)
+    plt.title(f'Verteilung der Summe der Radien nach Anzahl von num_radii\n (num_u={best_u}, epsilon={best_epsilon}, Dimension={dimension}, k={k})', fontsize=13, pad=20)
     plt.suptitle('')
     plt.xlabel('num_radii', fontsize=12)
-    plt.ylabel('Summe_der_Radien', fontsize=12)
+    plt.ylabel('Summe der Radien', fontsize=12)
     plt.xticks(rotation=45, fontsize=10)
     plt.yticks(fontsize=10)
     plt.tight_layout(pad=2.0)
@@ -584,7 +591,7 @@ def analyze_num_radii(df, best_u, best_epsilon, output_directory, dimension, k):
         avg_dauer=('Dauer (Sekunden)', 'mean')
     ).reset_index()
     plt.plot(line_data['num_radii'], line_data['avg_dauer'], marker='o', linestyle='-', color='b')
-    plt.title(f'Laufzeit nach num_radii\n(u={best_u}, epsilon={best_epsilon}, Dimension={dimension}, k={k})', fontsize=25, pad=20)
+    plt.title(f'Laufzeit nach num_radii\n(num_u={best_u}, epsilon={best_epsilon}, Dimension={dimension}, k={k})', fontsize=25, pad=20)
     plt.xlabel('num_radii', fontsize=20)
     plt.ylabel('Dauer (Sekunden)', fontsize=20)
     plt.xticks(line_data['num_radii'], fontsize=15)
@@ -595,27 +602,20 @@ def analyze_num_radii(df, best_u, best_epsilon, output_directory, dimension, k):
 
     min_num_radii = min(df['num_radii'])
     min_df = best_df[best_df['num_radii'] == min_num_radii]
+    max_radius = min_df['Summe_der_Radien'].mean()
+
+
     improvements = []
+
     for num_radii in best_df['num_radii'].unique():
-        if num_radii != min_num_radii:
-            df_num_radii = best_df[(best_df['num_radii'] == num_radii)]
-            merged = pd.merge(min_df, df_num_radii, on='Datei', suffixes=('_min', f'_num_radii{num_radii}'))
-            merged['improvement'] = (merged['Summe_der_Radien_min'] - merged[f'Summe_der_Radien_num_radii{num_radii}']) / merged['Summe_der_Radien_min'] * 100
-            avg_radius = merged[f'Summe_der_Radien_num_radii{num_radii}'].mean()  # Durchschnittliche Summe der Radien für den aktuellen u
-            improvements.append((num_radii, merged['improvement'].mean(), avg_radius))
+        df_num_radii = best_df[(best_df['num_radii'] == num_radii)]
+        num_radii_radius = df_num_radii[f'Summe_der_Radien'].mean()
+        improvement = (max_radius - num_radii_radius) / max_radius * 100
+
+        improvements.append((num_radii, improvement, num_radii_radius))
 
     improvement_df = pd.DataFrame(improvements, columns=['num_radii', 'Improvement (%)', 'Durchschnitt der Summe der Radien'])
 
-
-    # Markdown-Datei erstellen und Ergebnisse formatieren
-    with open(f'{output_directory}/num_radii_radius_improvement.md', 'w') as md_file:
-        md_file.write('# Verbesserung des Radius\n')
-        md_file.write(f'Vergleich der Verbesserungen des Radius im Vergleich zu num_radii={min_num_radii}:\n\n')
-        md_file.write('| num_radii | Improvement (%) | Druchschnitt der Summe der Radien |\n')
-        md_file.write('|-----------|-----------------|-----------------------------------|\n')
-        for row in improvements:
-            md_file.write(f'| {row[0]} | {row[1]:.2f} | {row[2]:.6f} |\n')
-        md_file.write('\n')
 
     tex_file = f'{output_directory}/num_radii.tex'
 
@@ -633,8 +633,8 @@ def analyze_num_radii(df, best_u, best_epsilon, output_directory, dimension, k):
 
         f.write('\\end{tabularx}\n')
         f.write(
-            f'\\caption{{Statistische Zusammenfassung der Laufzeit für verschiedene Werte von \\textit{{num\\_radii}} (u={best_u}, epsilon={best_epsilon}, Dimension={dimension}, k={k}).}}\n')
-        f.write('\\label{tab:stats_num_radii}\n')
+            f'\\caption{{Statistische Zusammenfassung der Laufzeit für verschiedene Werte von \\textit{{num\\_radii}} (num\\_u={best_u}, epsilon={best_epsilon}, Dimension={dimension}, k={k}).}}\n')
+        f.write(f'\\label{{tab:stats_num_radii_d{dimension}_k{k}}}\n')
         f.write('\\end{table}\n')
         f.write('\n')
 
@@ -651,8 +651,26 @@ def analyze_num_radii(df, best_u, best_epsilon, output_directory, dimension, k):
 
         f.write('\\end{tabularx}\n')
         f.write(
-            f'\\caption{{Statistische Zusammenfassung der Summe der Radien für verschiedene Werte von \\textit{{num\\_radii}} (u={best_u}, epsilon={best_epsilon}, Dimension={dimension}, k={k}).}}\n')
-        f.write('\\label{tab:summe_der_radien_num_radii}\n')
+            f'\\caption{{Statistische Zusammenfassung der Summe der Radien für verschiedene Werte von \\textit{{num\\_radii}} (num\\_u={best_u}, epsilon={best_epsilon}, Dimension={dimension}, k={k}).}}\n')
+        f.write(f'\\label{{tab:summe_der_radien_num_radii_d{dimension}_k{k}}}\n')
+        f.write('\\end{table}\n')
+        f.write('\n')
+
+
+        f.write('\\begin{table}[H]\n')
+        f.write('\\centering\n')
+        f.write('\\begin{tabularx}{\\textwidth}{|X|X|X|}\n')
+        f.write('\\hline\n')
+        f.write(
+            '\\textit{num\\_radii} & Mittelwert Summe der Radien & Verbesserung \\% \\\\ \\hline\n')
+
+        for _, row in improvement_df.iterrows():
+            f.write(f'{int(row['num_radii'])} & {row['Durchschnitt der Summe der Radien']:.6f} & {row['Improvement (%)']:.2f} \\\\ \\hline\n')
+
+        f.write('\\end{tabularx}\n')
+        f.write(
+            f'\\caption{{Verbesserung des Mittelwerts der Summe der Radien für verschiedene Werte von \\textit{{num\\_radii}} (num\\_u={best_u}, epsilon={best_epsilon}, Dimension={dimension}, k={k}).}}\n')
+        f.write(f'\\label{{tab:summe_der_radien_num_radii_d{dimension}_k{k}}}\n')
         f.write('\\end{table}\n')
 
 
@@ -677,7 +695,7 @@ def analyze_epsilon(df, best_u, best_num_radii, output_directory, dimension, k):
 
     plt.figure(figsize=(12, 8))
     best_df.boxplot(column='Dauer (Sekunden)', by='epsilon')
-    plt.title(f'Laufzeit nach epsilon\n(u={best_u}, num_radii={best_num_radii}, Dimension={dimension}, k={k})', fontsize=14, pad=20)
+    plt.title(f'Laufzeit nach epsilon\n(num_u={best_u}, num_radii={best_num_radii}, Dimension={dimension}, k={k})', fontsize=14, pad=20)
     plt.suptitle('')
     plt.xlabel('epilon', fontsize=12)
     plt.ylabel('Dauer (Sekunden)', fontsize=12)
@@ -693,7 +711,7 @@ def analyze_epsilon(df, best_u, best_num_radii, output_directory, dimension, k):
         avg_dauer=('Dauer (Sekunden)', 'mean')
     ).reset_index()
     plt.plot(line_data['epsilon'], line_data['avg_dauer'], marker='o', linestyle='-', color='b')
-    plt.title(f'Laufzeit nach epsilon\n(u={best_u}, num_radii={best_num_radii}, Dimension={dimension}, k={k})', fontsize=25, pad=20)
+    plt.title(f'Laufzeit nach epsilon\n(num_u={best_u}, num_radii={best_num_radii}, Dimension={dimension}, k={k})', fontsize=25, pad=20)
     plt.xlabel('epsilon', fontsize=20)
     plt.ylabel('Dauer (Sekunden)', fontsize=20)
     plt.xticks(line_data['epsilon'], fontsize=15)
@@ -704,15 +722,31 @@ def analyze_epsilon(df, best_u, best_num_radii, output_directory, dimension, k):
 
     plt.figure(figsize=(12, 8))
     best_df.boxplot(column='Summe_der_Radien', by='epsilon')
-    plt.title(f'Verteilung der Summe der Radien nach epislon\n (u={best_u}, num_radii={best_num_radii}, Dimension={dimension}, k={k})', fontsize=14, pad=20)
+    plt.title(f'Verteilung der Summe der Radien nach epsilon\n (num_u={best_u}, num_radii={best_num_radii}, Dimension={dimension}, k={k})', fontsize=14, pad=20)
     plt.suptitle('')
     plt.xlabel('epsilon', fontsize=12)
-    plt.ylabel('Summe_der_Radien', fontsize=12)
+    plt.ylabel('Summe der Radien', fontsize=12)
     plt.xticks(rotation=45, fontsize=10)
     plt.yticks(fontsize=10)
     plt.tight_layout(pad=2.0)
     plt.savefig(f'{output_directory}/epsilon_sum_of_radii_boxplot.pdf')
     plt.close('all')
+
+    min_epsilon = min(df['epsilon'])
+    min_df = best_df[best_df['epsilon'] == min_epsilon]
+    max_radius = min_df['Summe_der_Radien'].mean()
+
+
+    improvements = []
+
+    for epsilon in best_df['epsilon'].unique():
+        df_epsilon = best_df[(best_df['epsilon'] == epsilon)]
+        epsilon_radius = df_epsilon[f'Summe_der_Radien'].mean()
+        improvement = (max_radius - epsilon_radius) / max_radius * 100
+
+        improvements.append((epsilon, improvement, epsilon_radius))
+
+    improvement_df = pd.DataFrame(improvements, columns=['epsilon', 'Improvement (%)', 'Durchschnitt der Summe der Radien'])
 
     tex_file = f'{output_directory}/epsilon.tex'
 
@@ -730,8 +764,8 @@ def analyze_epsilon(df, best_u, best_num_radii, output_directory, dimension, k):
 
         f.write('\\end{tabularx}\n')
         f.write(
-            f'\\caption{{Statistische Zusammenfassung der Laufzeit für verschiedene Werte von \\textit{{epsilon}} (u={best_u}, num\\_radii={best_num_radii}, Dimension={dimension}, k={k}).}}\n')
-        f.write('\\label{tab:stats_epsilon}\n')
+            f'\\caption{{Statistische Zusammenfassung der Laufzeit für verschiedene Werte von \\textit{{epsilon}} (num\\_u={best_u}, num\\_radii={best_num_radii}, Dimension={dimension}, k={k}).}}\n')
+        f.write(f'\\label{{tab:stats_epsilon_d{dimension}_k{k}}}\n')
         f.write('\\end{table}\n')
         f.write('\n')
 
@@ -748,8 +782,25 @@ def analyze_epsilon(df, best_u, best_num_radii, output_directory, dimension, k):
 
         f.write('\\end{tabularx}\n')
         f.write(
-            f'\\caption{{Statistische Zusammenfassung der Summe der Radien für verschiedene Werte von \\textit{{epsilon}} (u={best_u}, num\\_radii={best_num_radii}, Dimension={dimension}, k={k}).}}\n')
-        f.write('\\label{tab:summe_der_radien_epsilon}\n')
+            f'\\caption{{Statistische Zusammenfassung der Summe der Radien für verschiedene Werte von \\textit{{epsilon}} (num\\_u={best_u}, num\\_radii={best_num_radii}, Dimension={dimension}, k={k}).}}\n')
+        f.write(f'\\label{{tab:summe_der_radien_epsilon_d{dimension}_k{k}}}\n')
+        f.write('\\end{table}\n')
+        f.write('\n')
+
+
+        f.write('\\begin{table}[H]\n')
+        f.write('\\centering\n')
+        f.write('\\begin{tabularx}{\\textwidth}{|X|X|X|}\n')
+        f.write('\\hline\n')
+        f.write('\\textit{epsilon} & Mittelwert Summe der Radien & Verbesserung \\% \\\\ \\hline\n')
+
+        for _, row in improvement_df.iterrows():
+            f.write(f'{row['epsilon']} & {row['Durchschnitt der Summe der Radien']:.6f} & {row['Improvement (%)']:.2f} \\\\ \\hline\n')
+
+        f.write('\\end{tabularx}\n')
+        f.write(
+            f'\\caption{{Verbesserung des Mittelwerts der Summe der Radien für verschiedene Werte von \\textit{{epsilon}} (num\\_u={best_u}, num\\_radii={best_num_radii}, Dimension={dimension}, k={k}).}}\n')
+        f.write(f'\\label{{tab:summe_der_radien_epsilon_d{dimension}_k{k}}}\n')
         f.write('\\end{table}\n')
 
 def analyze_runtime_for_dimensions_and_k(df, dimensions, ks, best_u, best_num_radii, best_epsilon, output_directory):
@@ -817,13 +868,14 @@ def compare_algorithms(dimension, k, seeds, data_directory):
     fpt_heuristic_df = pd.concat(fpt_heuristic_list, ignore_index=True)
     gonzalez_df = pd.concat(gonzalez_list, ignore_index=True)
     kmeans_df = pd.concat(kmeans_list, ignore_index=True)
+    string = 'mean'
 
-    fpt_heuristic_df = fpt_heuristic_df.groupby(['Datei', 'u', 'epsilon', 'num_radii']).agg({'Dauer (Sekunden)': 'mean', 'Summe_der_Radien': 'mean'}).reset_index()
-    gonzalez_df = gonzalez_df.groupby('Datei').agg({'Dauer (Sekunden)': 'mean', 'Summe_der_Radien': 'mean'}).reset_index()
-    kmeans_df = kmeans_df.groupby('Datei').agg({'Dauer (Sekunden)': 'mean', 'Summe_der_Radien': 'mean'}).reset_index()
+    fpt_heuristic_df = fpt_heuristic_df.groupby(['Datei', 'u', 'epsilon', 'num_radii']).agg({'Dauer (Sekunden)': string, 'Summe_der_Radien': string}).reset_index()
+    gonzalez_df = gonzalez_df.groupby('Datei').agg({'Dauer (Sekunden)': string, 'Summe_der_Radien': string}).reset_index()
+    kmeans_df = kmeans_df.groupby('Datei').agg({'Dauer (Sekunden)': string, 'Summe_der_Radien': string}).reset_index()
     heuristik_df = pd.read_csv(f'{data_directory}/Dimension={dimension}/k={k}/Heuristik/Results/results.csv')
 
-    best_parameter_df = fpt_heuristic_df.groupby(['u', 'num_radii', 'epsilon']).agg({'Dauer (Sekunden)': 'mean', 'Summe_der_Radien': 'mean'}).reset_index()
+    best_parameter_df = fpt_heuristic_df.groupby(['u', 'num_radii', 'epsilon']).agg({'Dauer (Sekunden)': string, 'Summe_der_Radien': string}).reset_index()
     best_row = best_parameter_df.loc[best_parameter_df['Summe_der_Radien'].idxmin()]
 
     best_u = best_row['u']
@@ -980,14 +1032,14 @@ def compare_algorithms(dimension, k, seeds, data_directory):
         f.write('\\centering\n')
         f.write('\\begin{tabularx}{\\textwidth}{|X|X|X|X|}\n')
         f.write('\\hline\n')
-        f.write('\\textit{u} & Besser (\\%) & Gleich (\\%) & Schlechter (\\%)\\\\ \\hline\n')
+        f.write('\\textit{num\\_u} & Besser (\\%) & Gleich (\\%) & Schlechter (\\%)\\\\ \\hline\n')
 
         for _, row in comparison_df.iterrows():
             f.write(f'{int(row['u'])} & {row['FPT_Heuristic vs Gonzalez Besser (%)']:.2f} & {row['FPT_Heuristic vs Gonzalez Gleich (%)']:.2f} & {row['FPT_Heuristic vs Gonzalez Schlechter (%)']:.2f} \\\\ \\hline\n')
 
         f.write('\\end{tabularx}\n')
-        f.write(f'\\caption{{Vergleich der Ergebnisse der FPT-Heuristik und Gonzalez für Daten der Dimension={dimension} und \\textit{{k={k}}}}}\n')
-        f.write('\\label{tab:fpt_heuristic_vs_gonzalez}\n')
+        f.write(f'\\caption{{Vergleich der Ergebnisse der FPT-Heuristik und Gonzalez für Daten der Dimension={dimension} und \\textit{{k}}={k}}}\n')
+        f.write(f'\\label{{tab:fpt_heuristic_vs_gonzalez_d{dimension}_k{k}}}\n')
         f.write('\\end{table}\n')
         f.write('\n')
 
@@ -996,14 +1048,14 @@ def compare_algorithms(dimension, k, seeds, data_directory):
         f.write('\\centering\n')
         f.write('\\begin{tabularx}{\\textwidth}{|X|X|X|X|}\n')
         f.write('\\hline\n')
-        f.write('\\textit{u} & Laufzeit FPT-Heuristik & Laufzeit Gonzalez\\\\ \\hline\n')
+        f.write('\\textit{num\\_u} & Laufzeit FPT-Heuristik & Laufzeit Gonzalez\\\\ \\hline\n')
 
         for _, row in comparison_df.iterrows():
             f.write(f'{int(row['u'])} & {row['Laufzeit FPT-Heuristik']} & {row['Laufzeit Gonzalez']} \\\\ \\hline\n')
 
         f.write('\\end{tabularx}\n')
-        f.write(f'\\caption{{Vergleich der Laufzeit in Sekunden der FPT-Heuristik und Gonzalez für Daten der Dimension={dimension} und \\textit{{k={k}}}}}\n')
-        f.write('\\label{tab:fpt_heuristic_vs_gonzalez_laufzeit}\n')
+        f.write(f'\\caption{{Vergleich der Laufzeit der FPT-Heuristik und Gonzalez für Daten der Dimension={dimension} und \\textit{{k}}={k} (Sekunden)}}\n')
+        f.write(f'\\label{{tab:fpt_heuristic_vs_gonzalez_laufzeit_d{dimension}_k{k}}}\n')
         f.write('\\end{table}\n')
         f.write('\n')
     
@@ -1012,14 +1064,14 @@ def compare_algorithms(dimension, k, seeds, data_directory):
         f.write('\\centering\n')
         f.write('\\begin{tabularx}{\\textwidth}{|X|X|X|X|}\n')
         f.write('\\hline\n')
-        f.write('\\textit{u} & Besser (\\%) & Gleich (\\%) & Schlechter (\\%)\\\\ \\hline\n')
+        f.write('\\textit{num\\_u} & Besser (\\%) & Gleich (\\%) & Schlechter (\\%)\\\\ \\hline\n')
 
         for _, row in comparison_df.iterrows():
             f.write(f'{int(row['u'])} & {row['FPT_Heuristic vs KMeans++ Besser (%)']:.2f}& {row['FPT_Heuristic vs KMeans++ Gleich (%)']:.2f}  & {row['FPT_Heuristic vs KMeans++ Schlechter (%)']:.2f} \\\\ \\hline\n')
 
         f.write('\\end{tabularx}\n')
-        f.write(f'\\caption{{Vergleich der Ergebnisse der FPT-Heuristik und \\textit{{k}}-Means++ für Daten der Dimension={dimension} und \\textit{{k={k}}}}}\n')
-        f.write('\\label{tab:fpt_heuristic_vs_kmeans}\n')
+        f.write(f'\\caption{{Vergleich der Ergebnisse der FPT-Heuristik und \\textit{{k}}-Means++ für Daten der Dimension={dimension} und \\textit{{k}}={k}}}\n')
+        f.write(f'\\label{{tab:fpt_heuristic_vs_kmeans_d{dimension}_k{k}}}\n')
         f.write('\\end{table}\n')
         f.write('\n')
 
@@ -1027,14 +1079,14 @@ def compare_algorithms(dimension, k, seeds, data_directory):
         f.write('\\centering\n')
         f.write('\\begin{tabularx}{\\textwidth}{|X|X|X|X|}\n')
         f.write('\\hline\n')
-        f.write('\\textit{u} & Laufzeit FPT-Heuristik & Laufzeit \\textit{k}-Means++\\\\ \\hline\n')
+        f.write('\\textit{num\\_u} & Laufzeit FPT-Heuristik & Laufzeit \\textit{k}-Means++\\\\ \\hline\n')
 
         for _, row in comparison_df.iterrows():
             f.write(f'{int(row['u'])} & {row['Laufzeit FPT-Heuristik']} & {row['Laufzeit KMeans']} \\\\ \\hline\n')
 
         f.write('\\end{tabularx}\n')
-        f.write(f'\\caption{{Vergleich der Laufzeit in Sekunden der FPT-Heuristik und \\textit{{k}}-Means++ für Daten der Dimension={dimension} und \\textit{{k={k}}}}}\n')
-        f.write('\\label{tab:fpt_heuristic_vs_kmeans_laufzeit}\n')
+        f.write(f'\\caption{{Vergleich der Laufzeit der FPT-Heuristik und \\textit{{k}}-Means++ für Daten der Dimension={dimension} und \\textit{{k}}={k} (Sekunden)}}\n')
+        f.write(f'\\label{{tab:fpt_heuristic_vs_kmeans_laufzeit_d{dimension}_k{k}}}\n')
         f.write('\\end{table}\n')
         f.write('\n')
     
@@ -1043,14 +1095,14 @@ def compare_algorithms(dimension, k, seeds, data_directory):
         f.write('\\centering\n')
         f.write('\\begin{tabularx}{\\textwidth}{|X|X|X|X|}\n')
         f.write('\\hline\n')
-        f.write('\\textit{u} & Besser (\\%) & Gleich (\\%) & Schlechter (\\%)\\\\ \\hline\n')
+        f.write('\\textit{num\\_u} & Besser (\\%) & Gleich (\\%) & Schlechter (\\%)\\\\ \\hline\n')
 
         for _, row in comparison_df.iterrows():
             f.write(f'{int(row['u'])} & {row['FPT_Heuristic vs Heuristik Besser (%)']:.2f} & {row['FPT_Heuristic vs Heuristik Gleich (%)']:.2f} & {row['FPT_Heuristic vs Heuristik Schlechter (%)']:.2f} \\\\ \\hline\n')
 
         f.write('\\end{tabularx}\n')
-        f.write(f'\\caption{{Vergleich der Ergebnisse der FPT-Heuristik und Heuristik für Daten der Dimension={dimension} und \\textit{{k={k}}}}}\n')
-        f.write('\\label{tab:fpt_heuristic_vs_heuristik}\n')
+        f.write(f'\\caption{{Vergleich der Ergebnisse der FPT-Heuristik und Heuristik für Daten der Dimension={dimension} und \\textit{{k}}={k}}}\n')
+        f.write(f'\\label{{tab:fpt_heuristic_vs_heuristik_d{dimension}_k{k}}}\n')
         f.write('\\end{table}\n')
         f.write('\n')
 
@@ -1058,14 +1110,14 @@ def compare_algorithms(dimension, k, seeds, data_directory):
         f.write('\\centering\n')
         f.write('\\begin{tabularx}{\\textwidth}{|X|X|X|X|}\n')
         f.write('\\hline\n')
-        f.write('\\textit{u} & Laufzeit FPT-Heuristik & Laufzeit Heuristik\\\\ \\hline\n')
+        f.write('\\textit{num\\_u} & Laufzeit FPT-Heuristik & Laufzeit Heuristik\\\\ \\hline\n')
 
         for _, row in comparison_df.iterrows():
             f.write(f'{int(row['u'])} & {row['Laufzeit FPT-Heuristik']} & {row['Laufzeit Heuristik']} \\\\ \\hline\n')
 
         f.write('\\end{tabularx}\n')
-        f.write(f'\\caption{{Vergleich der Laufzeit in Sekunden der FPT-Heuristik und Heuristik für Daten der Dimension={dimension} und \\textit{{k={k}}}}}\n')
-        f.write('\\label{tab:fpt_heuristic_vs_heuristik_laufzeit}\n')
+        f.write(f'\\caption{{Vergleich der Laufzeit der FPT-Heuristik und Heuristik für Daten der Dimension={dimension} und \\textit{{k}}={k} (Sekunden)}}\n')
+        f.write(f'\\label{{tab:fpt_heuristic_vs_heuristik_laufzeit_d{dimension}_k{k}}}\n')
         f.write('\\end{table}\n')
         f.write('\n')
 
@@ -1184,7 +1236,7 @@ def compare_heuristic_with_other_algorithms(dimensions, ks, seeds, data_director
 
         f.write('\\end{tabularx}\n')
         f.write(f'\\caption{{Vergleich der Ergebnisse von der Heuristik und Gonzalez}}\n')
-        f.write('\\label{tab:heuristik_vs_gonzalez}\n')
+        f.write(f'\\label{{tab:heuristik_vs_gonzalez_d{dimension}_k{k}}}\n')
         f.write('\\end{table}\n')
         f.write('\n')
 
@@ -1202,7 +1254,7 @@ def compare_heuristic_with_other_algorithms(dimensions, ks, seeds, data_director
 
         f.write('\\end{tabularx}\n')
         f.write(f'\\caption{{Vergleich der Summe der Radien von der Heuristik und Gonzalez}}\n')
-        f.write('\\label{tab:heuristik_vs_gonzalez_summe_der_radien}\n')
+        f.write(f'\\label{{tab:heuristik_vs_gonzalez_summe_der_radien_d{dimension}_k{k}}}\n')
         f.write('\\end{table}\n')
         f.write('\n')
 
@@ -1213,14 +1265,14 @@ def compare_heuristic_with_other_algorithms(dimensions, ks, seeds, data_director
         f.write('\\centering\n')
         f.write('\\begin{tabularx}{\\textwidth}{|X|X|X|X|}\n')
         f.write('\\hline\n')
-        f.write('Dimension & k & Dauer (Sekunden) Heuristik & Dauer (Sekunden) Gonzalez \\\\ \\hline\n')
+        f.write('Dimension & k & Laufzeit Heuristik & Laufzeit Gonzalez \\\\ \\hline\n')
 
         for _, row in mean_df.iterrows():
             f.write(f'{int(row['Dimension'])} & {int(row['k'])} & {row['Dauer (Sekunden)_Heuristik']:.7f} & {row['Dauer (Sekunden)_Gonzalez']:.7f} \\\\ \\hline\n')
 
         f.write('\\end{tabularx}\n')
-        f.write(f'\\caption{{Vergleich der Laufzeit von der Heuristik und Gonzalez}}\n')
-        f.write('\\label{tab:heuristik_vs_gonzalez_laufzeit}\n')
+        f.write(f'\\caption{{Vergleich der Laufzeit von der Heuristik und Gonzalez (Sekunden)}}\n')
+        f.write(f'\\label{{tab:heuristik_vs_gonzalez_laufzeit_d{dimension}_k{k}}}\n')
         f.write('\\end{table}\n')
         f.write('\n')
 
@@ -1236,7 +1288,7 @@ def compare_heuristic_with_other_algorithms(dimensions, ks, seeds, data_director
 
         f.write('\\end{tabularx}\n')
         f.write(f'\\caption{{Vergleich der Ergebnisse von der Heuristik und \\textit{{k}}-Means++}}\n')
-        f.write('\\label{tab:heuristik_vs_kmeans}\n')
+        f.write(f'\\label{{tab:heuristik_vs_kmeans_d{dimension}_k{k}}}\n')
         f.write('\\end{table}\n')
         f.write('\n')  
 
@@ -1252,7 +1304,7 @@ def compare_heuristic_with_other_algorithms(dimensions, ks, seeds, data_director
 
         f.write('\\end{tabularx}\n')
         f.write(f'\\caption{{Vergleich der Summe der Radien von der Heuristik und \\textit{{k}}-Means++}}\n')
-        f.write('\\label{tab:heuristik_vs_kemans_summe_der_radien}\n')
+        f.write(f'\\label{{tab:heuristik_vs_kemans_summe_der_radien_d{dimension}_k{k}}}\n')
         f.write('\\end{table}\n')
         f.write('\n')
 
@@ -1263,14 +1315,14 @@ def compare_heuristic_with_other_algorithms(dimensions, ks, seeds, data_director
         f.write('\\centering\n')
         f.write('\\begin{tabularx}{\\textwidth}{|X|X|X|X|}\n')
         f.write('\\hline\n')
-        f.write('Dimension & k & Dauer (Sekunden) Heuristik & Dauer (Sekunden) \\textit{k}-Means++ \\\\ \\hline\n')
+        f.write('Dimension & k & Laufzeit Heuristik & Laufzeit \\textit{k}-Means++ \\\\ \\hline\n')
 
         for _, row in mean_df.iterrows():
             f.write(f'{int(row['Dimension'])} & {int(row['k'])} & {row['Dauer (Sekunden)_Heuristik']:.7f} & {row['Dauer (Sekunden)_KMeans']:.7f} \\\\ \\hline\n')
 
         f.write('\\end{tabularx}\n')
-        f.write(f'\\caption{{Vergleich der Laufzeit von der Heuristik und \\textit{{k}}-Means++}}\n')
-        f.write('\\label{tab:heuristik_vs_kmeans_laufzeit}\n')
+        f.write(f'\\caption{{Vergleich der Laufzeit von der Heuristik und \\textit{{k}}-Means++ (Sekunden)}}\n')
+        f.write(f'\\label{{tab:heuristik_vs_kmeans_laufzeit_d{dimension}_k{k}}}\n')
         f.write('\\end{table}\n')
         f.write('\n')
 
@@ -1295,24 +1347,24 @@ def clustering(config, dimensions, ks, seeds, epsilon_values, u_values, num_radi
         
                 # Ausführung der Algorithmen
                 FPT_Heuristic(point_files, dimension, k, epsilon_values, u_values, num_radii_values, directory, point_directory, seed)
-                #cluster(point_files, dimension, k, directory, point_directory, 'Gonzalez', lib.gonzalez_wrapper, seed)
-                #cluster(point_files, dimension, k, directory, point_directory, 'KMeansPlusPlus', lib.kmeans_wrapper, seed)
+                cluster(point_files, dimension, k, directory, point_directory, 'Gonzalez', lib.gonzalez_wrapper, seed)
+                cluster(point_files, dimension, k, directory, point_directory, 'KMeansPlusPlus', lib.kmeans_wrapper, seed)
 
 
-            #cluster(point_files, dimension, k, directory, point_directory, 'Heuristik', lib.heuristic_wrapper)
+            cluster(point_files, dimension, k, directory, point_directory, 'Heuristik', lib.heuristic_wrapper)
 
 
 
 if __name__ == '__main__':
-    epsilon_values = [0.5, 0.4, 0.3, 0.2, 0.1]
-    u_values = [10000]
-    num_radii_values = [10]
+    epsilon_values = [0.5]
+    u_values = [100, 1000, 3000, 5000, 10000, 30000, 50000]
+    num_radii_values = [5]
     number_files = 100
     dimensions = [2]
-    ks = [3]
-    seeds = range(1)
+    ks = [3, 4, 6]
+    seeds = range(5)
 
-    data_directory = 'Data_Runtime_epsilon'
+    data_directory = 'Data_d2_k3_k4_k6'
     os.makedirs(data_directory, exist_ok=True)
 
     # Argumente aus der Konfiguration holen
@@ -1324,9 +1376,9 @@ if __name__ == '__main__':
     # Analyse und Vergleich der Ergebnisse von FPT_Heuristic
     analyze_results_FPT_Heuristic(dimensions, ks, seeds, data_directory)
 
-    # compare_heuristic_with_other_algorithms(dimensions, ks, seeds, data_directory)
+    compare_heuristic_with_other_algorithms(dimensions, ks, seeds, data_directory)
 
-    # for dimension in dimensions:
-    #     for k in ks:
-    #         # Vergleich der Ergebnisse der verschiedenen Algorithmen
-    #         compare_algorithms(dimension, k, seeds, data_directory)
+    for dimension in dimensions:
+        for k in ks:
+            # Vergleich der Ergebnisse der verschiedenen Algorithmen
+            compare_algorithms(dimension, k, seeds, data_directory)
