@@ -105,7 +105,7 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
         _X = self._validate_data(
             X,
             accept_sparse="csr",
-            dtype=[np.float64, np.float32],
+            dtype=[np.float64],
             order="C",
             accept_large_sparse=False,
             copy=False,
