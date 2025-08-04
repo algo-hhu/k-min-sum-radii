@@ -12,7 +12,11 @@ from sklearn.base import (
 )
 from sklearn.exceptions import NotFittedError
 from sklearn.utils._param_validation import Interval, StrOptions
-from sklearn.utils.validation import check_random_state
+from sklearn.utils.validation import (
+    _check_feature_names,
+    check_random_state,
+    validate_data,
+)
 
 import kmsr._core  # type: ignore
 
@@ -100,9 +104,9 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
         X: Sequence[Sequence[float]],
     ) -> "KMSR":
         self._validate_params()
-        self._check_feature_names(X, reset=True)
-
-        _X = self._validate_data(
+        _check_feature_names(self, X, reset=True)
+        _X = validate_data(
+            self,
             X,
             accept_sparse="csr",
             dtype=[np.float64],
