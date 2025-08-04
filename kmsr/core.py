@@ -13,12 +13,10 @@ from sklearn.base import (
 from sklearn.exceptions import NotFittedError
 from sklearn.utils._param_validation import Interval, StrOptions
 from sklearn.utils.validation import (
+    _check_feature_names,
     check_random_state,
     validate_data,
-    _check_feature_names,
 )
-
-from sklearn.utils.validation import check_random_state
 
 import kmsr._core  # type: ignore
 
