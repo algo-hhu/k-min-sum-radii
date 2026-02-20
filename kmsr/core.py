@@ -135,11 +135,13 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
             c_u = ctypes.c_int(self.n_u)
             c_num_radii = ctypes.c_int(self.n_test_radii)
 
-            _DLL.schmidt_wrapper.argtypes = (
+            schmidt_argtypes = (
                 common_argtypes[:4]
                 + [ctypes.c_double, ctypes.c_int, ctypes.c_int]
                 + common_argtypes[4:]
-            )  # type: ignore[assignment]
+            )
+
+            _DLL.schmidt_wrapper.argtypes = schmidt_argtypes  # type: ignore[assignment]
 
             _DLL.schmidt_wrapper.restype = ctypes.c_double
 
