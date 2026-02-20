@@ -139,7 +139,7 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
                 common_argtypes[:4]
                 + [ctypes.c_double, ctypes.c_int, ctypes.c_int]
                 + common_argtypes[4:]
-            )
+            )  # type: ignore[assignment]
 
             _DLL.schmidt_wrapper.restype = ctypes.c_double
 
@@ -167,7 +167,7 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
             else:
                 raise ValueError(f"Invalid algorithm: {self.algorithm}")
 
-            wrapper_function.argtypes = common_argtypes
+            wrapper_function.argtypes = common_argtypes  # type: ignore[assignment]
             wrapper_function.restype = ctypes.c_double
 
             self._inertia = wrapper_function(
