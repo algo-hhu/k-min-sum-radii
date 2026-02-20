@@ -190,8 +190,12 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
         self._cluster_radii = radii
 
         # Crop the centers and the radii in case the algorithm found less clusters
-        self._cluster_centers = self.cluster_centers_[: self._real_n_clusters]
-        self._cluster_radii = self.cluster_radii_[: self._real_n_clusters]
+        self._cluster_centers = self.cluster_centers_[: self._real_n_clusters].astype(
+            np.float64
+        )
+        self._cluster_radii = self.cluster_radii_[: self._real_n_clusters].astype(
+            np.float64
+        )
 
         self._labels = labels
 
