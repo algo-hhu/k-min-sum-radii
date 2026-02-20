@@ -107,10 +107,15 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
         found_clusters = ctypes.c_int()
         c_seed = ctypes.c_int(_seed)
 
-        c_labels = (ctypes.c_int * n_samples)()
-        n_coords = self.n_features_in_ * self.n_clusters
-        c_centers = (ctypes.c_double * n_coords)()
-        c_radii = (ctypes.c_double * self.n_clusters)()
+        labels = np.empty(n_samples, dtype=np.int32, order="C")
+        centers = np.empty(
+            (self.n_clusters, self.n_features_in_), dtype=np.float64, order="C"
+        )
+        radii = np.empty(self.n_clusters, dtype=np.float64, order="C")
+
+        c_labels = labels.ctypes.data_as(ctypes.POINTER(ctypes.c_int))
+        c_centers = centers.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+        c_radii = radii.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
 
         # Define common argtypes for the wrappers
         common_argtypes: list[Type[ctypes._CData]] = [
@@ -179,19 +184,14 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
 
         self._real_n_clusters = found_clusters.value
 
-        self._cluster_centers = np.array(
-            np.ctypeslib.as_array(
-                c_centers, shape=(self.n_clusters, self.n_features_in_)
-            ),
-            copy=True,
-        )
-        self._cluster_radii = np.array(np.ctypeslib.as_array(c_radii), copy=True)
+        self._cluster_centers = centers
+        self._cluster_radii = radii
 
         # Crop the centers and the radii in case the algorithm found less clusters
         self._cluster_centers = self.cluster_centers_[: self._real_n_clusters]
         self._cluster_radii = self.cluster_radii_[: self._real_n_clusters]
 
-        self._labels = np.array(np.ctypeslib.as_array(c_labels), copy=True)
+        self._labels = labels
 
         return self
 
