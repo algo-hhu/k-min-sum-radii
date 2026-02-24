@@ -1,22 +1,11 @@
 import ctypes
-from numbers import Integral, Real
 from time import time
-from typing import Any, Optional, Sequence
+from typing import Any, Optional, Sequence, Type
 
 import numpy as np
-from sklearn.base import (
-    BaseEstimator,
-    ClassNamePrefixFeaturesOutMixin,
-    ClusterMixin,
-    _fit_context,
-)
+from sklearn.base import BaseEstimator, ClassNamePrefixFeaturesOutMixin, ClusterMixin
 from sklearn.exceptions import NotFittedError
-from sklearn.utils._param_validation import Interval, StrOptions
-from sklearn.utils.validation import (
-    _check_feature_names,
-    check_random_state,
-    validate_data,
-)
+from sklearn.utils.validation import validate_data
 
 import kmsr._core  # type: ignore
 
@@ -24,17 +13,6 @@ _DLL = ctypes.cdll.LoadLibrary(kmsr._core.__file__)
 
 
 class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
-    _parameter_constraints: dict = {
-        "n_clusters": [Interval(Integral, 1, None, closed="left")],
-        "algorithm": [
-            StrOptions({"auto", "fpt-heuristic", "heuristic", "gonzalez", "kmeans"})
-        ],
-        "epsilon": [Interval(Real, 0, None, closed="left")],
-        "n_u": [Interval(Integral, 1, None, closed="left")],
-        "n_test_radii": [Interval(Integral, 1, None, closed="left")],
-        "random_state": ["random_state"],
-    }
-
     NOT_FITTED_ERROR = (
         "This KMSR instance is not fitted yet. "
         "Call 'fit' with appropriate arguments before using this estimator."
@@ -49,13 +27,12 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
         n_test_radii: int = 10,
         random_state: Optional[int] = None,
     ) -> None:
-        self._seed = int(time()) if random_state is None else random_state
+        self.random_state = random_state
         self.n_clusters = n_clusters
         self.epsilon = epsilon
-        self.algorithm = "fpt-heuristic" if algorithm == "auto" else algorithm.lower()
+        self.algorithm = algorithm
         self.n_u = n_u
         self.n_test_radii = n_test_radii
-        self.random_state = check_random_state(self._seed)
 
     @property
     def inertia_(self) -> float:
@@ -87,7 +64,6 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
             raise NotFittedError(self.NOT_FITTED_ERROR)
         return self._real_n_clusters
 
-    @_fit_context(prefer_skip_nested_validation=True)
     def fit(
         self,
         X: Sequence[Sequence[float]],
@@ -104,35 +80,69 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
         X: Sequence[Sequence[float]],
     ) -> "KMSR":
         self._validate_params()
-        _check_feature_names(self, X, reset=True)
+
+        _algorithm = (
+            "fpt-heuristic" if self.algorithm == "auto" else self.algorithm.lower()
+        )
+        _seed = int(time()) if self.random_state is None else self.random_state
         _X = validate_data(
             self,
             X,
-            accept_sparse="csr",
-            dtype=[np.float64],
+            accept_sparse=False,
+            dtype=np.float64,
             order="C",
             accept_large_sparse=False,
             copy=False,
+            reset=True,
         )
 
-        n_samples, self.n_features_in_ = _X.shape
+        n_samples = _X.shape[0]
 
+        _X = np.ascontiguousarray(_X, dtype=np.float64)
         c_array = _X.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
 
         c_n = ctypes.c_int(n_samples)
         c_features = ctypes.c_int(self.n_features_in_)
         c_clusters = ctypes.c_int(self.n_clusters)
         found_clusters = ctypes.c_int()
-        c_seed = ctypes.c_int(self._seed)
+        c_seed = ctypes.c_int(_seed)
 
-        c_labels = (ctypes.c_int * n_samples)()
-        c_centers = (ctypes.c_double * self.n_features_in_ * self.n_clusters)()
-        c_radii = (ctypes.c_double * self.n_clusters)()
+        labels = np.empty(n_samples, dtype=np.int32, order="C")
+        centers = np.empty(
+            (self.n_clusters, self.n_features_in_), dtype=np.float64, order="C"
+        )
+        radii = np.empty(self.n_clusters, dtype=np.float64, order="C")
 
-        if self.algorithm == "fpt-heuristic":
+        c_labels = labels.ctypes.data_as(ctypes.POINTER(ctypes.c_int))
+        c_centers = centers.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+        c_radii = radii.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+
+        # Define common argtypes for the wrappers
+        common_argtypes: list[Type[ctypes._CData]] = [
+            ctypes.POINTER(ctypes.c_double),  # X
+            ctypes.c_int,  # n_samples
+            ctypes.c_int,  # n_features
+            ctypes.c_int,  # n_clusters
+            ctypes.POINTER(ctypes.c_int),  # found_clusters
+            ctypes.POINTER(ctypes.c_int),  # labels
+            ctypes.POINTER(ctypes.c_double),  # centers
+            ctypes.POINTER(ctypes.c_double),  # radii
+            ctypes.c_int,  # seed
+        ]
+
+        if _algorithm == "fpt-heuristic":
             c_epsilon = ctypes.c_double(self.epsilon)
             c_u = ctypes.c_int(self.n_u)
             c_num_radii = ctypes.c_int(self.n_test_radii)
+
+            schmidt_argtypes = (
+                common_argtypes[:4]
+                + [ctypes.c_double, ctypes.c_int, ctypes.c_int]
+                + common_argtypes[4:]
+            )
+
+            _DLL.schmidt_wrapper.argtypes = schmidt_argtypes  # type: ignore[assignment]
+
             _DLL.schmidt_wrapper.restype = ctypes.c_double
 
             self._inertia: float = _DLL.schmidt_wrapper(
@@ -150,14 +160,16 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
                 c_seed,
             )
         else:
-            if self.algorithm == "heuristic":
+            if _algorithm == "heuristic":
                 wrapper_function = _DLL.heuristic_wrapper
-            elif self.algorithm == "gonzalez":
+            elif _algorithm == "gonzalez":
                 wrapper_function = _DLL.gonzalez_wrapper
-            elif self.algorithm == "kmeans":
+            elif _algorithm == "kmeans":
                 wrapper_function = _DLL.kmeans_wrapper
             else:
                 raise ValueError(f"Invalid algorithm: {self.algorithm}")
+
+            wrapper_function.argtypes = common_argtypes  # type: ignore[assignment]
             wrapper_function.restype = ctypes.c_double
 
             self._inertia = wrapper_function(
@@ -174,15 +186,59 @@ class KMSR(BaseEstimator, ClusterMixin, ClassNamePrefixFeaturesOutMixin):
 
         self._real_n_clusters = found_clusters.value
 
-        self._cluster_centers = np.ctypeslib.as_array(
-            c_centers, shape=(self.n_clusters, self.n_features_in_)
-        )
-        self._cluster_radii = np.ctypeslib.as_array(c_radii)
+        self._cluster_centers = centers
+        self._cluster_radii = radii
 
         # Crop the centers and the radii in case the algorithm found less clusters
-        self._cluster_centers = self.cluster_centers_[: self._real_n_clusters]
-        self._cluster_radii = self.cluster_radii_[: self._real_n_clusters]
+        self._cluster_centers = self.cluster_centers_[
+            : self._real_n_clusters
+        ]  # type: ignore[assignment]
+        self._cluster_radii = self.cluster_radii_[
+            : self._real_n_clusters
+        ]  # type: ignore[assignment]
 
-        self._labels = np.ctypeslib.as_array(c_labels)
+        self._labels = labels
 
         return self
+
+    def _validate_params(self) -> None:
+        if not isinstance(self.n_clusters, (int, np.integer)):
+            raise TypeError(
+                f"n_clusters must be an integer, got {type(self.n_clusters).__name__}"
+            )
+        if self.n_clusters < 1:
+            raise ValueError(f"n_clusters must be >= 1, got {self.n_clusters}")
+
+        valid_algos = {"auto", "fpt-heuristic", "heuristic", "gonzalez", "kmeans"}
+        if self.algorithm.lower() not in valid_algos:
+            raise ValueError(
+                f"algorithm must be one of {valid_algos}; got {self.algorithm}"
+            )
+
+        if not isinstance(self.epsilon, (float, np.floating)):
+            raise TypeError(
+                f"epsilon must be a float, got {type(self.epsilon).__name__}"
+            )
+        if self.epsilon < 0:
+            raise ValueError(f"epsilon must be >= 0; got {self.epsilon}")
+
+        if not isinstance(self.n_u, (int, np.integer)):
+            raise TypeError(f"n_u must be an integer," f"got {type(self.n_u).__name__}")
+        if self.n_u < 1:
+            raise ValueError(f"n_u must be >= 1, got {self.n_u}")
+        if not isinstance(self.n_test_radii, (int, np.integer)):
+            raise TypeError(
+                f"n_test_radii must be an integer,"
+                f"got {type(self.n_test_radii).__name__}"
+            )
+        if self.n_test_radii < 1:
+            raise ValueError(f"n_test_radii must be >= 1, got {self.n_test_radii}")
+
+        if self.random_state is not None:
+            if not isinstance(self.random_state, (int, np.integer)):
+                raise TypeError(
+                    f"random_state must be None or an integer,"
+                    f"got {type(self.random_state).__name__}"
+                )
+            if self.random_state < 0:
+                raise ValueError(f"random_state must be >= 0, got {self.random_state}")
