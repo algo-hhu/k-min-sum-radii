@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "kmsr"
-version = "0.1.5"
+version = "0.1.6"
 description = "kMSR provides a selection of algorithms to solve the k-Min-Sum-Radii problem."
 authors = ["Niklas Lenssen <niklas.lenssen@hhu.de>", "Annika Hennes <annika.hennes@hhu.de>", "Melanie Schmidt <mschmidt@hhu.de>", "Giulia Baldini <giulia.baldini@hhu.de>"]
 readme = "README.md"
@@ -11,16 +11,16 @@ packages = [
 include = ["images"]
 
 [tool.poetry.dependencies]
-python = "^3.10"
-scikit-learn = "^1.6.1"
+python = "^3.12"
+scikit-learn = "^1.9.1"
 
 [tool.poetry.group.dev.dependencies]
-black = "^26.3.1"
-pre-commit = "^2.14.0"
-flake8 = "^7.0.0"
-mypy = "^1.10.0"
-matplotlib = "^3.9.1"
-pandas = "^2.2.2"
+black = "^26.10.1"
+pre-commit = "^4.7.0"
+flake8 = "^7.5.0"
+mypy = "^2.4.1"
+matplotlib = "^3.11.2"
+pandas = "^3.1.0"
 
 [tool.poetry.build]
 script = "build_extension.py"
