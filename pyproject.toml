@@ -1,14 +1,28 @@
 [tool.poetry]
 name = "kmsr"
-version = "0.1.7"
+version = "0.1.8"
 description = "kMSR provides a selection of algorithms to solve the k-Min-Sum-Radii problem."
-authors = ["Niklas Lenssen <niklas.lenssen@hhu.de>", "Annika Hennes <annika.hennes@hhu.de>", "Melanie Schmidt <mschmidt@hhu.de>", "Giulia Baldini <giulia.baldini@hhu.de>"]
+authors = [
+    "Niklas Lenssen <niklas.lenssen@hhu.de>",
+    "Annika Hennes <annika.hennes@hhu.de>",
+    "Melanie Schmidt <mschmidt@hhu.de>",
+    "Giulia Baldini <giulia.baldini@hhu.de>"
+]
 readme = "README.md"
 license = "GPL-3.0-only"
 packages = [
-    { include = "kmsr" },
+    { include = "kmsr" }
 ]
 include = ["images"]
+
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: Implementation :: CPython",
+]
+
+[tool.poetry.urls]
+Homepage = "https://clustering-toolkit.algo.hhu.de/K-Min_Sum_Radii_Clustering"
+Repository = "https://github.com/algo-hhu/k-min-sum-radii"
 
 [tool.poetry.dependencies]
 python = "^3.12"

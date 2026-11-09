@@ -1,13 +1,15 @@
+---
+
 name: Upload to PyPI
+
+permissions:
+  contents: read
 
 on:
   release:
     types: [published]
   # Manuell aus dem Actions-Tab startbar
   workflow_dispatch:
-
-permissions:
-  contents: read
 
 jobs:
   build_wheels:
@@ -17,9 +19,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v4.2.0 
+        uses: pypa/cibuildwheel@v4.2.0
         env:
-          CIBW_BUILD: "cp312-manylinux_x86_64 cp313-manylinux_x86_64 cp314-manylinux_x86_64 cp315-manylinux_x86_64"
+          CIBW_BUILD: >-
+            cp312-manylinux_x86_64
+            cp313-manylinux_x86_64
+            cp314-manylinux_x86_64
+            cp315-manylinux_x86_64
           CIBW_ARCHS_LINUX: x86_64
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           # Prüft, dass jedes Wheel importierbar ist:
