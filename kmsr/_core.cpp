@@ -44,7 +44,7 @@ int exportCluster(vector<Cluster> clusters, int *labels, double *centers, double
       Ball ball = findMinEnclosingBall(clusters[i].getPoints());
       for (size_t j = 0; j < ball.getCenter().getCoordinates().size(); j++)
       {
-        centers[numClusters * dimensions + j] = ball.getCenter().getCoordinates()[j];
+        centers[static_cast<size_t>(numClusters) * dimensions + j] = ball.getCenter().getCoordinates()[j];
       }
 
       radii[numClusters] = ball.getRadius();
